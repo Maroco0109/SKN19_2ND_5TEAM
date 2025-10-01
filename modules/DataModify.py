@@ -13,10 +13,11 @@
 class DataPreprocessing() :
     def __init__(self, df) :
         self.df = df        # 수정할 데이터
+        self.raw_data = df  # 수정 전의 원본 데이터를 저장해둠
     
     def drop_cols(self, df=None, cols=None) :
-        if df is None :
-            df = self.df
+        if df is None :     # 인자로 전달한 데이터가 없으면 생성할 때 넣은 데이터를 활용
+            df = self.df    # 모든 전처리 함수를 위와 같은 방식으로 작성
         pass
 
     """
@@ -26,7 +27,7 @@ class DataPreprocessing() :
     def run(self, df=None, encoding='label') :
         self.drop_cols()
         # ...
-        return df   # 전처리가 완료된 df 반환
+        return self.df   # 전처리가 완료된 df 반환
 
 def split_data_X_y(df) :        # 데이터를 특성, 라벨(시간, 사건)으로 분리
     pass
