@@ -9,6 +9,9 @@
 3. 전처리된 데이터 저장 코드
 
 """
+import torch
+
+from torch.utils.data import Dataset, DataLoader
 
 class DataPreprocessing() :
     def __init__(self, df) :
@@ -28,9 +31,22 @@ class DataPreprocessing() :
         self.drop_cols()
         # ...
         return self.df   # 전처리가 완료된 df 반환
+    
+class RiskDataset(Dataset) :
+    def __init__(self, X, y, e) :
+        self.X = torch.tensor(X, dtype=torch.float32)
+        self.times = torch.tensor(y, dtype=torch.long)
+        self.events = torch.tensor(e, dtype=torch.long)
+
+    def __len__(self) :
+        return len(self.X)
+    
+    def __getitem__(self, index):
+        return self.X[index], self.times[index], self.events[index]
 
 def split_data_X_y(df) :        # 데이터를 특성, 라벨(시간, 사건)으로 분리
     pass
 
 def split_data_X_y_e(df) :      # 데이터를 특성, 시간, 사건으로 분리
     pass
+
