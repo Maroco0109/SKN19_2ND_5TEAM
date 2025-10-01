@@ -14,7 +14,7 @@ class DataPreprocessing() :
     def __init__(self, df) :
         self.df = df        # 수정할 데이터
     
-    def drop_cols(self, df=None, cols) :
+    def drop_cols(self, df=None, cols=None) :
         if df is None :
             df = self.df
         pass
@@ -23,7 +23,7 @@ class DataPreprocessing() :
     모든 전처리 기능 함수로 구현
     """
 
-    def run(self, df=None, encoding='label' : ('label', 'onehot')) :
+    def run(self, df=None, encoding='label') :
         self.drop_cols()
         # ...
         return df   # 전처리가 완료된 df 반환
