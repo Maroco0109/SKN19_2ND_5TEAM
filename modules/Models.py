@@ -35,7 +35,7 @@ class DeepHitSurv(nn.Module) :
 
         def forward(self, x) :
             s = self.shared(x)
-            logits = torch.stack([head(h) for head in self.heads], dim=1)
+            logits = torch.stack([head(s) for head in self.heads], dim=1)
 
             pmf = F.softmax(logits, dim=-1)
             cif = torch.cumsum(pmf, dim=-1)
