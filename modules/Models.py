@@ -33,14 +33,14 @@ class DeepHitSurv(nn.Module) :
             nn.Linear(h2, time_bins) for _ in range(num_events)
         ])
 
-        def forward(self, x) :
-            s = self.shared(x)
-            logits = torch.stack([head(s) for head in self.heads], dim=1)
+    def forward(self, x) :
+        s = self.shared(x)
+        logits = torch.stack([head(s) for head in self.heads], dim=1)
 
-            pmf = F.softmax(logits, dim=-1)
-            cif = torch.cumsum(pmf, dim=-1)
+        pmf = F.softmax(logits, dim=-1)
+        cif = torch.cumsum(pmf, dim=-1)
 
-            return logits, pmf, cif
+        return logits, pmf, cif
 
 
 
@@ -89,7 +89,7 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05) :
             cif_i = cif[i, k, t_i]
             cif_j = cif[mask_j, k, t_i]
 
-            diff = margin + cif_j, cif_i
+            diff = margin + cif_j - cif_i
             loss_pairs = torch.clamp(diff, min=0.0).sum()
             L_rank = L_rank + loss_pairs
             count_pairs += mask_j.sum().item()
