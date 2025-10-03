@@ -37,31 +37,29 @@ class CancerDataset(Dataset) :
 
         self.transform = transform
 
-        df = self.transform(df)
+        if self.transform is not None:
+            df = self.transform(df)
 
-        if time_column is None :
-            self.data = df.values.astype(float)
-            self.time = None
-        else:
-            self.time = df[time_column].values.astype(float)
-            self.data = df.drop(columns=[time_column]).values.astype(float)
+        self.time = df[time_column].values.astype(float) if time_column else None
+        self.target = df[target_column].values.astype(float) if target_column else None
 
-        if target_column is None:
-            self.data = df.values.astype(float)
-            self.target = None
-        else:
-            self.target = df[target_column].values.astype(float)
-            self.data = df.drop(columns=[target_column]).values.astype(float)
+        drop_cols = [col for col in [time_column, target_column] if col is not None]
+        self.data = df.drop(columns=drop_cols).values.astype(float)
 
         self.data = torch.tensor(self.data, dtype=torch.float32)
         if self.target is not None:
             self.target = torch.tensor(self.target, dtype=torch.float32)
+        if self.time is not None:
+            self.time = torch.tensor(self.time, dtype=torch.float32)
 
-    def __len__(self) :
-        return len(self.X)
-    
+    def __len__(self):
+        return len(self.data)
+
     def __getitem__(self, index):
-        return self.X[index], self.time[index], self.target[index]
+        x = self.data[index]
+        t = self.time[index] if self.time is not None else None
+        y = self.target[index] if self.target is not None else None
+        return x, t, y
     
 
 def load_data(file_paths) :

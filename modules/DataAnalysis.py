@@ -16,24 +16,6 @@ from IPython.display import display
 
 import modules.DataModify as DataModify
 
-
-# 데이터 프레임에서, boundary를 기준으로 연속형, 혹은 범주형에 속하는 컬럼명을 반환
-def return_cols(df, type, boundary=15) :    # type : ('continuous', 'categorical'), boundary : 두 분류를 결정할 서로 다른 요소의 수
-    cols = []
-    if type == 'continuous' :
-        for col in df.columns:
-            if pd.api.types.is_numeric_dtype(df[col]) and df[col].nunique(dropna=True) >= boundary :
-                cols.append(col)
-
-    elif type == 'categorical' :
-        for col in df.columns:
-            if df[col].nunique(dropna=True) < boundary :
-                cols.append(col)
-    else :
-        ValueError('Wrong type.')
-
-    return cols
-
 # 데이터 프레임에서, 범주형 데이터에 속하는 값들의 컬럼값을 출력
 def show_value_counts(df, cols=None, boundary=30) :
     for col in df.columns:
