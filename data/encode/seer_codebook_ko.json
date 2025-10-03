@@ -1,0 +1,332 @@
+{
+  "meta": {
+    "dataset": "SEER (user-provided 2022Data_short.csv)",
+    "generated_at": "2025-10-02T14:15:53.774020+09:00",
+    "notes": [
+      "This codebook includes high-value categorical code tables and site-specific surgery subsets for quick analysis.",
+      "Full surgery code lists are very large and site-dependent; for authoritative coding, consult STORE/NAACCR/SEER manuals cited below."
+    ],
+    "sources": {
+      "summary_stage_2018": "https://seer.cancer.gov/tools/ssm/",
+      "laterality": "https://apps.naaccr.org/data-dictionary/data-dictionary/version%3D24/data-item-view/item-number%3D410/",
+      "eod_2018_general": "https://seer.cancer.gov/tools/staging/eod/2018_EOD-General-Instructions_2020.pdf",
+      "cod_to_site_recode_2023": "https://seer.cancer.gov/codrecode/icdo3_d2023/",
+      "rx_summ_surg_prim_site_2023": "https://apps.naaccr.org/data-dictionary/data-dictionary/version%3D25/data-item-view/item-number%3D1291/",
+      "naaccr_crosswalks": "https://www.naaccr.org/crosswalks-interoperability/",
+      "crosswalk_breast": "https://www.naaccr.org/wp-content/uploads/2023/10/Breast-Surgery-Code-Crosswalk.xlsx",
+      "crosswalk_colon": "https://www.naaccr.org/wp-content/uploads/2023/10/Colon-Surgery-Code-Crosswalk.xlsx",
+      "crosswalk_lung": "https://www.naaccr.org/wp-content/uploads/2023/10/Lung-Surgery-Code-Crosswalk.xlsx"
+    }
+  },
+  "columns": [
+    {
+      "original_name": "Unnamed: 0",
+      "korean_name": "(인덱스)",
+      "description": "CSV 저장 과정에서 생긴 임시 인덱스 컬럼(분석에 불필요하면 삭제 가능)."
+    },
+    {
+      "original_name": "Patient ID",
+      "korean_name": "환자 ID",
+      "description": "익명화된 환자 식별자. 동일 환자의 여러 원발암이 있을 수 있음."
+    },
+    {
+      "original_name": "Age recode with <1 year olds and 90+",
+      "korean_name": "나이 재코딩(만 1세 미만·90세 이상 구간 포함)",
+      "description": "세부 나이를 구간화한 변수. 1세 미만, 90세 이상을 별도 구간으로 표시."
+    },
+    {
+      "original_name": "Sex",
+      "korean_name": "성별",
+      "description": "남/여 등."
+    },
+    {
+      "original_name": "Year of diagnosis",
+      "korean_name": "진단연도",
+      "description": "암 최초 진단이 확정된 연도."
+    },
+    {
+      "original_name": "Year of follow-up recode",
+      "korean_name": "추적연도(재코딩)",
+      "description": "추적 관찰 기준 연도(재코딩된 구간 값)."
+    },
+    {
+      "original_name": "Race recode (W, B, AI, API)",
+      "korean_name": "인종 재코딩(백/흑/아메리카원주민/아시아·태평양)",
+      "description": "SEER 표준 인종 구분 요약(White, Black, American Indian/Alaska Native, Asian/Pacific Islander)."
+    },
+    {
+      "original_name": "Site recode ICD-O-3/WHO 2008",
+      "korean_name": "부위 재코딩(ICD-O-3/WHO 2008)",
+      "description": "ICD-O-3 원발부위/조직형을 WHO 2008 기준으로 재분류한 요약 변수."
+    },
+    {
+      "original_name": "Primary Site",
+      "korean_name": "원발부위(코드)",
+      "description": "ICD-O-3의 원발부위 코드."
+    },
+    {
+      "original_name": "Primary Site - labeled",
+      "korean_name": "원발부위(라벨)",
+      "description": "원발부위의 사람이 읽는 라벨(예: Colon, Lung 등)."
+    },
+    {
+      "original_name": "Derived Summary Grade 2018 (2018+)",
+      "korean_name": "파생 요약 등급 2018",
+      "description": "2018+ 규칙에 따른 종양 분화도 요약(예: Well/Moderately/Poorly/Undifferentiated)."
+    },
+    {
+      "original_name": "Laterality",
+      "korean_name": "좌우측성",
+      "description": "해당 장기의 좌/우/양측/정중선 여부(적용 가능한 부위에 한함)."
+    },
+    {
+      "original_name": "EOD Schema ID Recode (2010+)",
+      "korean_name": "EOD 스키마 ID(재코딩)",
+      "description": "2010+ EOD(Extent of Disease) 규칙 적용을 위한 스키마 식별자(재코딩)."
+    },
+    {
+      "original_name": "Combined Summary Stage with Expanded Regional Codes (2004+)",
+      "korean_name": "결합 요약 병기(확장 지역 코드 포함)",
+      "description": "2004+ 규칙 기반의 Summary Stage(국소/지역/원격 등) 확장 버전."
+    },
+    {
+      "original_name": "RX Summ--Surg Prim Site (1998+)",
+      "korean_name": "치료 요약—원발부위 수술",
+      "description": "1998+ 기준의 원발부위 수술 여부/범위 요약 코드."
+    },
+    {
+      "original_name": "RX Summ--Scope Reg LN Sur (2003+)",
+      "korean_name": "치료 요약—국소 림프절 수술 범위",
+      "description": "2003+ 기준의 국소 림프절 절제 범위 요약 코드."
+    },
+    {
+      "original_name": "RX Summ--Surg Oth Reg/Dis (2003+)",
+      "korean_name": "치료 요약—기타 국소/원격 질환 수술",
+      "description": "2003+ 기준의 기타 국소/원격 질환에 대한 수술 요약 코드."
+    },
+    {
+      "original_name": "COD to site recode",
+      "korean_name": "사망원인→부위 재코딩",
+      "description": "사망원인(ICD) 코드를 암 부위 기준으로 재코딩(암 관련 사망 여부 분석에 사용)."
+    },
+    {
+      "original_name": "Sequence number",
+      "korean_name": "종양 순번",
+      "description": "동일 환자 내에서 원발암 발생 순서(예: 첫 번째 원발암, 두 번째 원발암 등)."
+    },
+    {
+      "original_name": "Median household income inflation adj to 2023",
+      "korean_name": "가구 중위소득(2023년 물가보정)",
+      "description": "거주 지역의 가구 중위소득을 2023년 달러 기준으로 보정한 값."
+    },
+    {
+      "original_name": "Number of Cores Positive Recode (2010+)",
+      "korean_name": "(전립선) 생검 양성 코어 수(재코딩)",
+      "description": "전립선 생검에서 암이 검출된 코어 개수 요약(적용 환자에 한함)."
+    },
+    {
+      "original_name": "Number of Cores Examined Recode (2010+)",
+      "korean_name": "(전립선) 생검 검사 코어 수(재코딩)",
+      "description": "전립선 생검에서 검사한 총 코어 개수 요약(적용 환자에 한함)."
+    },
+    {
+      "original_name": "EOD Primary Tumor Recode (2018+)",
+      "korean_name": "EOD 원발종양(재코딩)",
+      "description": "2018+ EOD 규칙의 원발종양 범위 코드를 재코딩한 변수(부위별 정의 상이)."
+    },
+    {
+      "original_name": "PRCDA 2020",
+      "korean_name": "PRCDA 2020",
+      "description": "AI/AN 분석에 사용하는 2020 기준 PRCDA 지역 분류(코드값)."
+    },
+    {
+      "original_name": "Survival months flag",
+      "korean_name": "생존개월 플래그",
+      "description": "생존개월 수의 신뢰성/계산 방식 표시 플래그(예: 정확/추정/결측 대체 등)."
+    },
+    {
+      "original_name": "Survival months",
+      "korean_name": "생존개월",
+      "description": "진단 시점부터 사망 또는 마지막 추적까지의 기간(개월)."
+    },
+    {
+      "original_name": "Vital status recode (study cutoff used)",
+      "korean_name": "생존상태 재코딩(연구 절단점 기준)",
+      "description": "연구 절단점 기준의 생존/사망 상태 요약(Alive/Dead 등)."
+    }
+  ],
+  "code_tables": {
+    "Combined Summary Stage with Expanded Regional Codes (2004+)": {
+      "description_ko": "SEER 요약 병기(2004+) 코드 (확장 Regional 세분 포함)",
+      "codes": {
+        "0": "상피내(in situ)",
+        "1": "국소(Localised only)",
+        "2": "지역(직접 침윤만)",
+        "3": "지역(림프절 전이만)",
+        "4": "지역(침윤 + 림프절)",
+        "7": "원격(Distant)",
+        "8": "양성/경계(특정 CNS)",
+        "9": "불명 또는 병기 미분류"
+      }
+    },
+    "Laterality": {
+      "description_ko": "좌우측성 (NAACCR #410)",
+      "codes": {
+        "0": "쌍이 아닌 부위",
+        "1": "우측",
+        "2": "좌측",
+        "3": "일측성이나 좌우 불명",
+        "4": "양측 침범(동시) / 특정 양측성 암",
+        "5": "정중선(midline)",
+        "9": "정보 없음"
+      }
+    },
+    "Derived Summary Grade 2018 (2018+)": {
+      "description_ko": "요약 분화도 2018 (사이트별 규칙 유도)",
+      "codes": {
+        "A": "Well differentiated(고분화)",
+        "B": "Moderately differentiated(중등도)",
+        "C": "Poorly differentiated(저분화)",
+        "D": "Undifferentiated/Anaplastic(미분화)",
+        "H": "High grade(사이트별)",
+        "L": "Low grade(사이트별)",
+        "8": "해당 없음",
+        "9": "불명/평가불가"
+      }
+    },
+    "Race recode (W, B, AI, API)": {
+      "description_ko": "인종/민족 요약",
+      "codes": {
+        "NHW": "Non-Hispanic White",
+        "NHB": "Non-Hispanic Black",
+        "AIAN": "American Indian/Alaska Native",
+        "API": "Asian/Pacific Islander",
+        "Hispanic": "Hispanic(모든 인종)"
+      }
+    },
+    "Vital status recode (study cutoff used)": {
+      "description_ko": "연구 절단점 기준 생존 상태",
+      "codes": {
+        "1": "Alive(생존)",
+        "0": "Dead(사망)"
+      }
+    },
+    "Survival months flag": {
+      "description_ko": "생존개월 계산 특성/신뢰성 플래그(요약)",
+      "notes": "기관/연도별 편차가 있어 실제 해석 시 공식 문서 참고",
+      "special_values": {
+        "8": "DCO/부검만 → 생존개월 9999",
+        "9": "날짜결측 등 계산불능 → 생존개월 9999"
+      }
+    },
+    "PRCDA 2020": {
+      "description_ko": "AI/AN 분석용 PRCDA 지역 구분",
+      "codes": {
+        "1": "PRCDA",
+        "2": "Non-PRCDA"
+      },
+      "notes": "실제 코드셋은 관할/데이터 제출처에 따라 상이할 수 있음"
+    },
+    "COD to site recode": {
+      "description_ko": "사망원인→부위 재코딩(대분류)",
+      "groups_example": [
+        "Head & Neck",
+        "Digestive",
+        "Respiratory",
+        "Breast",
+        "Female Genital",
+        "Male Genital",
+        "Urinary",
+        "Hematopoietic/Reticuloendothelial",
+        "Other Cancer",
+        "Non-Cancer Causes",
+        "Unknown/Invalid"
+      ],
+      "reference": "세부 ICD 매핑은 SEER COD to Site Recode 2023 Revision 엑셀/텍스트 참조"
+    },
+    "EOD Primary Tumor Recode (2018+)": {
+      "description_ko": "EOD 2018 원발종양 코드(사이트별)",
+      "common_special": {
+        "800": "원발 미증거(occult primary)",
+        "999": "불명(정보 없음)"
+      },
+      "notes": "기타 코드는 사이트별 장(챕터)에서 정의. 반드시 EOD 2018 General/사이트별 지침 확인."
+    },
+    "RX Summ--Surg Prim Site (부위별 세부 코드 예시)": {
+      "overview": {
+        "item_1290": "진단 2003-2022에 적용 (숫자코드)",
+        "item_1291": "진단 2023+에 적용 (알파뉴메릭, 예: Axxx/Bxxx)",
+        "notes": [
+          "부위별 코드 체계가 상이하며, 2023+부터 B코드 도입(일부 사이트).",
+          "아래는 연구/분석에 자주 쓰이는 사이트의 요약 예시(부분 발췌).",
+          "정확한 코딩은 최신 STORE/NAACCR Crosswalks 참조."
+        ]
+      },
+      "sites": {
+        "Breast": {
+          "source": "NAACCR Breast Surgery Code Crosswalk (2023/10)",
+          "item_1291_examples": {
+            "A000": "수술 없음",
+            "A100": "국소 종양 파괴(열응고/냉동/전기소작 등)",
+            "A200": "국소 종양 절제/진공보조절제 등(부분절제 범주)",
+            "A300": "부분절제(와이드/세그먼트 등)",
+            "A500": "감축수술(debulking)",
+            "A600": "근치/광범위 수술",
+            "A900": "수술, NOS",
+            "A990": "수술 여부 불명/사망진단서만",
+            "B300": "2024+ 일부 시설에서 사용되는 확장 코드(교차표 참조)"
+          }
+        },
+        "Colon": {
+          "source": "NAACCR Colon Surgery Code Crosswalk (2023/10)",
+          "item_1291_examples": {
+            "A000": "수술 없음",
+            "A100": "국소 종양 파괴",
+            "A300": "부분 절제(세그먼트/헤미코렉토미 등)",
+            "A700": "연속장기 동시절제(en bloc) 포함 대장절제",
+            "A800": "대장절제, NOS",
+            "A900": "수술, NOS",
+            "A990": "수술 여부 불명/사망진단서만",
+            "B700": "연속장기 동시절제(en bloc) (정보 불충분 시)"
+          }
+        },
+        "Lung": {
+          "source": "NAACCR Lung Surgery Code Crosswalk (2023/10)",
+          "item_1291_examples": {
+            "A000": "수술 없음",
+            "A100": "국소 파괴(소작/열응고 등)",
+            "A300": "설상절제/분절절제(서브로바)",
+            "A400": "엽절제",
+            "A500": "폐전적출(전폐절제)",
+            "A900": "수술, NOS",
+            "A990": "수술 여부 불명/사망진단서만",
+            "B400": "확장된 엽절제/복합수술(교차표 참조)"
+          }
+        },
+        "Prostate": {
+          "source": "STORE/SEER Manual (부위별 장)",
+          "item_1290_common": {
+            "00": "수술 없음",
+            "10": "국소 파괴/바늘괴사 등",
+            "30": "TURP/부분절제",
+            "50": "근치 전립선절제(개복/복강경/로봇)",
+            "90": "수술, NOS",
+            "99": "수술 여부 불명"
+          },
+          "notes": "2023+ 코드(1291)는 알파뉴메릭 전환. 최신 STORE 참고."
+        }
+      }
+    },
+    "RX Summ--Scope Reg LN Sur (2003+)": {
+      "description_ko": "국소 림프절 수술 범위(요약)",
+      "notes": "정확한 정의는 사이트별/연도별 규칙 참조",
+      "typical_structure": {
+        "0": "없음",
+        "1": "감시림프절 생검(SLNB)만",
+        "2": "부분 절제/표본절제",
+        "3": "광범위 절제/곽청(dissection)",
+        "9": "불명/해당 없음"
+      }
+    }
+  }
+}
