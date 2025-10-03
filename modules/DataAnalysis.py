@@ -25,7 +25,10 @@ def show_value_counts(df, cols=None, boundary=30) :
             print("-"*20)
             continue
 
-        value_counts = df[col].fillna("NA").value_counts(dropna=False)  # 결측치는 NA로 처리 후 출력
+        series = df[col]
+        if pd.api.types.is_extension_array_dtype(series.dtype):  # Nullable dtypes (e.g., Int64) need object conversion
+            series = series.astype('object')
+        value_counts = series.fillna("NA").value_counts(dropna=False)  # 결측치는 NA로 처리 후 출력
         print(value_counts)
         print("-" * 20)
 
