@@ -102,48 +102,51 @@ class DeepHitSurvWithSEBlock(nn.Module) :
         return logits, pmf, cif
 
 
-def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05) :
-
+def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05):
     B, K, T = pmf.shape
     device = pmf.device
 
     eps = 1e-8
-
     likelihood_loss = torch.zeros(B, device=device)
 
+    # ===== uncensored =====
     uncensored_mask = (events >= 0)
-    if uncensored_mask.any() :
-        idx_uncensored = uncensored_mask.nonzero(as_tuple=False).squeeze(-1)
-        t_uncensored = times[idx_uncensored]
-        e_uncensored = events[idx_uncensored]
+    if uncensored_mask.any():
+        # 항상 1D long tensor로 안전하게
+        idx_uncensored = uncensored_mask.nonzero(as_tuple=True)[0]
+        t_uncensored = times[idx_uncensored].long()
+        e_uncensored = events[idx_uncensored].long()
 
         pmf_vals = pmf[idx_uncensored, e_uncensored, t_uncensored]
         likelihood_loss[idx_uncensored] = -torch.log(pmf_vals + eps)
 
+    # ===== censored =====
     censored_mask = (events < 0)
-    if censored_mask.any() :
-        idx_censored = censored_mask.nonzero(as_tuple=True).squeeze(-1)
-        t_censored = times[idx_censored]
+    if censored_mask.any():
+        idx_censored = censored_mask.nonzero(as_tuple=True)[0]
+        t_censored = times[idx_censored].long()
 
         surv = 1.0 - cif[idx_censored, :, t_censored].sum(dim=1)
         likelihood_loss[idx_censored] = -torch.log(surv + eps)
 
     L_likelihood = likelihood_loss.mean()
 
+    # ===== ranking loss =====
     L_rank = torch.tensor(0.0, device=device)
     count_pairs = 0
 
-    for k in range(K) :
-        idx_k = (events == k).nonzero(as_tuple=False).squeeze(-1)
-        if idx_k.numel() == 0 :
+    for k in range(K):
+        idx_k = (events == k).nonzero(as_tuple=True)[0]  # 항상 1D long tensor
+        if idx_k.numel() == 0:
             continue
 
-        for i in idx_k :
+        for i in idx_k:
             t_i = int(times[i].item())
 
             mask_j = (times > t_i)
             if mask_j.sum() == 0:
                 continue
+
             cif_i = cif[i, k, t_i]
             cif_j = cif[mask_j, k, t_i]
 
@@ -152,10 +155,10 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05) :
             L_rank = L_rank + loss_pairs
             count_pairs += mask_j.sum().item()
 
-    if count_pairs > 0 :
+    if count_pairs > 0:
         L_rank = L_rank / count_pairs
-    else :
+    else:
         L_rank = torch.tensor(0.0, device=device)
 
-    loss = L_likelihood + alpha*L_rank
+    loss = L_likelihood + alpha * L_rank
     return loss, L_likelihood.detach(), L_rank.detach()
