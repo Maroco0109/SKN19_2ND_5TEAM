@@ -103,9 +103,16 @@ class DeepHitSurvWithSEBlock(nn.Module) :
 
 
 def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05):
+    """
+    DeepHit loss function with:
+    - batch size 1~N 안전
+    - GPU device-side assert 방지
+    - PMF / CIF 범위 clip
+    - log 연산 nan 방지
+    """
     B, K, T = pmf.shape
     device = pmf.device
-    eps = 1e-8
+    eps = 1e-6  # log 안정화
 
     likelihood_loss = torch.zeros(B, device=device)
 
@@ -116,11 +123,12 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05):
         if idx_uncensored.ndim == 0:
             idx_uncensored = idx_uncensored.unsqueeze(0)
 
-        t_uncensored = times[idx_uncensored].long().clamp(max=T-1)  # 시간 범위 벗어나면 마지막 인덱스로
+        t_uncensored = times[idx_uncensored].long().clamp(max=T-1)
         e_uncensored = events[idx_uncensored].long()
 
-        pmf_vals = pmf[idx_uncensored, e_uncensored, t_uncensored]
-        likelihood_loss[idx_uncensored] = -torch.log(pmf_vals + eps)
+        # PMF 값 clip
+        pmf_vals = pmf[idx_uncensored, e_uncensored, t_uncensored].clamp(min=eps)
+        likelihood_loss[idx_uncensored] = -torch.log(pmf_vals)
 
     # ===== censored =====
     censored_mask = (events < 0)
@@ -129,9 +137,11 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05):
         if idx_censored.ndim == 0:
             idx_censored = idx_censored.unsqueeze(0)
 
-        t_censored = times[idx_censored].long().clamp(max=T-1)  # 마지막 인덱스로 안전하게
+        t_censored = times[idx_censored].long().clamp(max=T-1)
+        # CIF 값 clip
         surv = 1.0 - cif[idx_censored, :, t_censored].sum(dim=1)
-        likelihood_loss[idx_censored] = -torch.log(surv + eps)
+        surv = surv.clamp(min=eps)
+        likelihood_loss[idx_censored] = -torch.log(surv)
 
     L_likelihood = likelihood_loss.mean()
 
@@ -148,14 +158,14 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05):
 
         for i in idx_k:
             t_i = int(times[i].item())
-            t_i = min(t_i, T-1)  # ranking에서도 시간 범위 벗어나면 마지막으로 강제
+            t_i = min(t_i, T-1)  # 시간 범위 벗어나면 마지막으로 강제
 
             mask_j = (times > t_i)
             if mask_j.sum() == 0:
                 continue
 
-            cif_i = cif[i, k, t_i]
-            cif_j = cif[mask_j, k, t_i]
+            cif_i = cif[i, k, t_i].clamp(min=0.0, max=1.0)
+            cif_j = cif[mask_j, k, t_i].clamp(min=0.0, max=1.0)
 
             diff = margin + cif_j - cif_i
             loss_pairs = torch.clamp(diff, min=0.0).sum()
@@ -167,5 +177,6 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05):
 
     loss = L_likelihood + alpha * L_rank
     return loss, L_likelihood.detach(), L_rank.detach()
+
 
 
