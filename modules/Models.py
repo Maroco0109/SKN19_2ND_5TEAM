@@ -105,15 +105,17 @@ class DeepHitSurvWithSEBlock(nn.Module) :
 def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05):
     B, K, T = pmf.shape
     device = pmf.device
-
     eps = 1e-8
+
     likelihood_loss = torch.zeros(B, device=device)
 
     # ===== uncensored =====
     uncensored_mask = (events >= 0)
     if uncensored_mask.any():
-        # 항상 1D long tensor로 안전하게
         idx_uncensored = uncensored_mask.nonzero(as_tuple=True)[0]
+        if idx_uncensored.ndim == 0:
+            idx_uncensored = idx_uncensored.unsqueeze(0)
+
         t_uncensored = times[idx_uncensored].long()
         e_uncensored = events[idx_uncensored].long()
 
@@ -124,8 +126,10 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05):
     censored_mask = (events < 0)
     if censored_mask.any():
         idx_censored = censored_mask.nonzero(as_tuple=True)[0]
-        t_censored = times[idx_censored].long()
+        if idx_censored.ndim == 0:
+            idx_censored = idx_censored.unsqueeze(0)
 
+        t_censored = times[idx_censored].long()
         surv = 1.0 - cif[idx_censored, :, t_censored].sum(dim=1)
         likelihood_loss[idx_censored] = -torch.log(surv + eps)
 
@@ -136,13 +140,14 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05):
     count_pairs = 0
 
     for k in range(K):
-        idx_k = (events == k).nonzero(as_tuple=True)[0]  # 항상 1D long tensor
+        idx_k = (events == k).nonzero(as_tuple=True)[0]
+        if idx_k.ndim == 0:
+            idx_k = idx_k.unsqueeze(0)
         if idx_k.numel() == 0:
             continue
 
         for i in idx_k:
             t_i = int(times[i].item())
-
             mask_j = (times > t_i)
             if mask_j.sum() == 0:
                 continue
@@ -157,8 +162,7 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05):
 
     if count_pairs > 0:
         L_rank = L_rank / count_pairs
-    else:
-        L_rank = torch.tensor(0.0, device=device)
 
     loss = L_likelihood + alpha * L_rank
     return loss, L_likelihood.detach(), L_rank.detach()
+
