@@ -48,9 +48,9 @@ class CancerDataset(Dataset) :
 
         self.data = torch.tensor(self.data, dtype=torch.float32)
         if self.target is not None:
-            self.target = torch.tensor(self.target, dtype=torch.int64)
+            self.target = torch.tensor(self.target, dtype=torch.long)
         if self.time is not None:
-            self.time = torch.tensor(self.time, dtype=torch.int64)
+            self.time = torch.tensor(self.time, dtype=torch.long)
 
     def __len__(self):
         return len(self.data)
