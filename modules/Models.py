@@ -114,10 +114,6 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-6):
     B, K, T = pmf.shape
     device = pmf.device
 
-    # ----- 시간 축 범위 확인 -----
-    times_min = times.min().item()
-    times_max = times.max().item()
-    print(f"[Debug] times min: {times_min}, times max: {times_max}, T: {T}")
 
     mask_out_of_range = (times < 0) | (times >= T)
     if mask_out_of_range.any():
