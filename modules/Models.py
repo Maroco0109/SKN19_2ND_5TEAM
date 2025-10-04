@@ -116,7 +116,7 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05):
         if idx_uncensored.ndim == 0:
             idx_uncensored = idx_uncensored.unsqueeze(0)
 
-        t_uncensored = times[idx_uncensored].long()
+        t_uncensored = times[idx_uncensored].long().clamp(max=T-1)  # 시간 범위 벗어나면 마지막 인덱스로
         e_uncensored = events[idx_uncensored].long()
 
         pmf_vals = pmf[idx_uncensored, e_uncensored, t_uncensored]
@@ -129,7 +129,7 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05):
         if idx_censored.ndim == 0:
             idx_censored = idx_censored.unsqueeze(0)
 
-        t_censored = times[idx_censored].long()
+        t_censored = times[idx_censored].long().clamp(max=T-1)  # 마지막 인덱스로 안전하게
         surv = 1.0 - cif[idx_censored, :, t_censored].sum(dim=1)
         likelihood_loss[idx_censored] = -torch.log(surv + eps)
 
@@ -148,6 +148,8 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05):
 
         for i in idx_k:
             t_i = int(times[i].item())
+            t_i = min(t_i, T-1)  # ranking에서도 시간 범위 벗어나면 마지막으로 강제
+
             mask_j = (times > t_i)
             if mask_j.sum() == 0:
                 continue
@@ -165,4 +167,5 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05):
 
     loss = L_likelihood + alpha * L_rank
     return loss, L_likelihood.detach(), L_rank.detach()
+
 
