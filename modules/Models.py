@@ -43,7 +43,7 @@ class DeepHitSurv(nn.Module) :
         return logits, pmf, cif
 
 class DeepHitSurvWithSEBlock(nn.Module) :
-    def __init__(self, input_dim, hidden_size=(128, 64), time_bins=50, num_events=4, dropout=0.2, se_ratio=0.25) :
+    def __init__(self, input_dim, hidden_size=(128, 64), time_bins=100, num_events=4, dropout=0.2, se_ratio=0.25) :
         super().__init__()
         h1, h2 = hidden_size
         self.num_events = num_events
@@ -102,22 +102,26 @@ class DeepHitSurvWithSEBlock(nn.Module) :
         return logits, pmf, cif
 
 
-import torch
-
 def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-6):
     """
-    DeepHit loss function (stable version)
-    
-    pmf: [B, K, T] predicted probability mass function
-    cif: [B, K, T] cumulative incidence function
-    times: [B] observed times
-    events: [B] event types (-1 for censored)
-    alpha: ranking loss weight
-    margin: ranking margin
-    eps: numerical stability
+    DeepHit loss with:
+    - GPU-safe indexing
+    - batch size 1~N
+    - PMF/CIF clamp
+    - times debug: 범위를 벗어난 경우 출력
     """
+
     B, K, T = pmf.shape
     device = pmf.device
+
+    # ----- 시간 축 범위 확인 -----
+    times_min = times.min().item()
+    times_max = times.max().item()
+    print(f"[Debug] times min: {times_min}, times max: {times_max}, T: {T}")
+
+    mask_out_of_range = (times < 0) | (times >= T)
+    if mask_out_of_range.any():
+        print("[Warning] times 범위를 벗어난 인덱스:", times[mask_out_of_range])
 
     # ----- likelihood loss -----
     likelihood_loss = torch.zeros(B, device=device)
@@ -127,10 +131,9 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-6):
     if uncensored_mask.any():
         idx = uncensored_mask.nonzero(as_tuple=True)[0]
         if idx.numel() > 0:
-            t_idx = times[idx].long().clamp(max=T-1)
+            t_idx = times[idx].clamp(min=0, max=T-1).long()
             e_idx = events[idx].long()
-            
-            # cumulative PMF
+
             cum_pmf = pmf[idx, e_idx, :].cumsum(dim=1)
             pmf_vals = cum_pmf[torch.arange(len(idx), device=device), t_idx].clamp(min=eps)
             likelihood_loss[idx] = -torch.log(pmf_vals)
@@ -140,9 +143,10 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-6):
     if censored_mask.any():
         idx = censored_mask.nonzero(as_tuple=True)[0]
         if idx.numel() > 0:
-            t_idx = times[idx].long().clamp(max=T-1)
+            t_idx = times[idx].clamp(min=0, max=T-1).long()
             surv = 1.0 - cif[idx, :, :].cumsum(dim=1)
-            surv_vals = surv[torch.arange(len(idx), device=device), t_idx].sum(dim=1).clamp(min=eps)
+            arange_idx = torch.arange(len(idx), device=device)
+            surv_vals = surv[arange_idx, :, t_idx].sum(dim=1).clamp(min=eps)
             likelihood_loss[idx] = -torch.log(surv_vals)
 
     L_likelihood = likelihood_loss.mean()
@@ -166,7 +170,6 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-6):
 
             cif_i = cif[i_idx, k, t_i].clamp(0.0, 1.0)
             cif_j = cif[mask_j, k, t_i].clamp(0.0, 1.0)
-            
             diff = margin + cif_j - cif_i
             L_rank += torch.clamp(diff, min=0.0).sum()
             count_pairs += mask_j.sum().item()
@@ -176,6 +179,7 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-6):
 
     loss = L_likelihood + alpha * L_rank
     return loss, L_likelihood.detach(), L_rank.detach()
+
 
 
 
