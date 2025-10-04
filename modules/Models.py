@@ -102,74 +102,73 @@ class DeepHitSurvWithSEBlock(nn.Module) :
         return logits, pmf, cif
 
 
-def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05):
+import torch
+
+def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-6):
     """
-    DeepHit loss function with:
-    - batch size 1~N 안전
-    - GPU device-side assert 방지
-    - PMF / CIF 범위 clip
-    - log 연산 nan 방지
+    DeepHit loss function (stable version)
+    
+    pmf: [B, K, T] predicted probability mass function
+    cif: [B, K, T] cumulative incidence function
+    times: [B] observed times
+    events: [B] event types (-1 for censored)
+    alpha: ranking loss weight
+    margin: ranking margin
+    eps: numerical stability
     """
     B, K, T = pmf.shape
     device = pmf.device
-    eps = 1e-6  # log 안정화
 
+    # ----- likelihood loss -----
     likelihood_loss = torch.zeros(B, device=device)
 
-    # ===== uncensored =====
+    # uncensored
     uncensored_mask = (events >= 0)
     if uncensored_mask.any():
-        idx_uncensored = uncensored_mask.nonzero(as_tuple=True)[0]
-        if idx_uncensored.ndim == 0:
-            idx_uncensored = idx_uncensored.unsqueeze(0)
+        idx = uncensored_mask.nonzero(as_tuple=True)[0]
+        if idx.numel() > 0:
+            t_idx = times[idx].long().clamp(max=T-1)
+            e_idx = events[idx].long()
+            
+            # cumulative PMF
+            cum_pmf = pmf[idx, e_idx, :].cumsum(dim=1)
+            pmf_vals = cum_pmf[torch.arange(len(idx), device=device), t_idx].clamp(min=eps)
+            likelihood_loss[idx] = -torch.log(pmf_vals)
 
-        t_uncensored = times[idx_uncensored].long().clamp(max=T-1)
-        e_uncensored = events[idx_uncensored].long()
-
-        # PMF 값 clip
-        pmf_vals = pmf[idx_uncensored, e_uncensored, t_uncensored].clamp(min=eps)
-        likelihood_loss[idx_uncensored] = -torch.log(pmf_vals)
-
-    # ===== censored =====
+    # censored
     censored_mask = (events < 0)
     if censored_mask.any():
-        idx_censored = censored_mask.nonzero(as_tuple=True)[0]
-        if idx_censored.ndim == 0:
-            idx_censored = idx_censored.unsqueeze(0)
-
-        t_censored = times[idx_censored].long().clamp(max=T-1)
-        # CIF 값 clip
-        surv = 1.0 - cif[idx_censored, :, t_censored].sum(dim=1)
-        surv = surv.clamp(min=eps)
-        likelihood_loss[idx_censored] = -torch.log(surv)
+        idx = censored_mask.nonzero(as_tuple=True)[0]
+        if idx.numel() > 0:
+            t_idx = times[idx].long().clamp(max=T-1)
+            surv = 1.0 - cif[idx, :, :].cumsum(dim=1)
+            surv_vals = surv[torch.arange(len(idx), device=device), t_idx].sum(dim=1).clamp(min=eps)
+            likelihood_loss[idx] = -torch.log(surv_vals)
 
     L_likelihood = likelihood_loss.mean()
 
-    # ===== ranking loss =====
+    # ----- ranking loss -----
     L_rank = torch.tensor(0.0, device=device)
     count_pairs = 0
 
     for k in range(K):
         idx_k = (events == k).nonzero(as_tuple=True)[0]
-        if idx_k.ndim == 0:
-            idx_k = idx_k.unsqueeze(0)
         if idx_k.numel() == 0:
             continue
 
-        for i in idx_k:
-            t_i = int(times[i].item())
-            t_i = min(t_i, T-1)  # 시간 범위 벗어나면 마지막으로 강제
+        times_k = times[idx_k].long()
+        cif_k = cif[idx_k, k, :]
 
+        for i_idx, t_i in zip(idx_k, times_k):
             mask_j = (times > t_i)
             if mask_j.sum() == 0:
                 continue
 
-            cif_i = cif[i, k, t_i].clamp(min=0.0, max=1.0)
-            cif_j = cif[mask_j, k, t_i].clamp(min=0.0, max=1.0)
-
+            cif_i = cif[i_idx, k, t_i].clamp(0.0, 1.0)
+            cif_j = cif[mask_j, k, t_i].clamp(0.0, 1.0)
+            
             diff = margin + cif_j - cif_i
-            loss_pairs = torch.clamp(diff, min=0.0).sum()
-            L_rank = L_rank + loss_pairs
+            L_rank += torch.clamp(diff, min=0.0).sum()
             count_pairs += mask_j.sum().item()
 
     if count_pairs > 0:
@@ -177,6 +176,7 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05):
 
     loss = L_likelihood + alpha * L_rank
     return loss, L_likelihood.detach(), L_rank.detach()
+
 
 
 
