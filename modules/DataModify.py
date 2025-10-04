@@ -40,17 +40,17 @@ class CancerDataset(Dataset) :
         if self.transform is not None:
             df = self.transform(df)
 
-        self.time = df[time_column].values.astype(float) if time_column else None
-        self.target = df[target_column].values.astype(float) if target_column else None
+        self.time = df[time_column].values.astype(int) if time_column else None
+        self.target = df[target_column].values.astype(int) if target_column else None
 
         drop_cols = [col for col in [time_column, target_column] if col is not None]
         self.data = df.drop(columns=drop_cols).values.astype(float)
 
         self.data = torch.tensor(self.data, dtype=torch.float32)
         if self.target is not None:
-            self.target = torch.tensor(self.target, dtype=torch.float32)
+            self.target = torch.tensor(self.target, dtype=torch.int64)
         if self.time is not None:
-            self.time = torch.tensor(self.time, dtype=torch.float32)
+            self.time = torch.tensor(self.time, dtype=torch.int64)
 
     def __len__(self):
         return len(self.data)
