@@ -148,6 +148,8 @@ class DataPreprocessing() :
         if bin_size <= 0:
             raise ValueError('bin_size must be a positive integer')
         numeric = pd.to_numeric(series, errors='coerce')
+        # 모델 안정성을 위해 270개월(=90개 3개월 구간) 이상은 270으로 상한을 둡니다.
+        numeric = numeric.clip(upper=270)
         binned = (numeric // bin_size).astype('Int64')
         binned = binned.where(~numeric.isna(), other=pd.NA)
         return binned.fillna(-1).astype(int)
@@ -266,6 +268,8 @@ class DataPreprocessing() :
         bin_col_name = None
         if survival_months_col in df_work.columns:
             df_work[survival_months_col] = pd.to_numeric(df_work[survival_months_col], errors='coerce')
+            # 구간화와 일관성을 위해 원본 생존 개월도 270개월로 상한을 둡니다.
+            df_work[survival_months_col] = df_work[survival_months_col].clip(upper=270)
             bin_col_name = f'{survival_months_col}_bin_{bin_size}m'
             df_work[bin_col_name] = self.bin_survival_months(df_work[survival_months_col], bin_size=bin_size)
 
