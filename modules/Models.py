@@ -107,63 +107,67 @@ class DeepHitSurvWithSEBlock(nn.Module) :
 
 def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-8):
     """
-    Stable DeepHit loss (fixed negative loss issue)
+    DeepHit original-style loss (Lee et al., 2018)
+    - Uses PMF for likelihood
+    - Uses efficient pairwise ranking loss (vectorized)
+    - Handles censored and competing risks properly
     """
     B, K, T = pmf.shape
     device = pmf.device
 
+    # --------------------
+    # Likelihood Loss (Negative log-likelihood)
+    # --------------------
     likelihood_loss = torch.zeros(B, device=device)
 
-    # uncensored samples
     uncensored_mask = (events >= 0)
     if uncensored_mask.any():
         idx = uncensored_mask.nonzero(as_tuple=True)[0]
-        if idx.numel() > 0:
-            t_idx = times[idx].clamp(min=0, max=T-1).long()
-            e_idx = events[idx].long()
+        t_idx = times[idx].clamp(min=0, max=T-1).long()
+        e_idx = events[idx].long()
 
-            # PMF는 사건-시간 확률 자체를 써야 함 (cumsum ❌)
-            pmf_vals = pmf[idx, e_idx, t_idx].clamp(min=eps, max=1.0)
-            likelihood_loss[idx] = -torch.log(pmf_vals)
+        pmf_vals = pmf[idx, e_idx, t_idx].clamp(min=eps, max=1.0)
+        likelihood_loss[idx] = -torch.log(pmf_vals)
 
-    # censored samples
     censored_mask = (events < 0)
     if censored_mask.any():
         idx = censored_mask.nonzero(as_tuple=True)[0]
-        if idx.numel() > 0:
-            t_idx = times[idx].clamp(min=0, max=T-1).long()
-            surv = 1.0 - cif[idx, :, t_idx].clamp(min=0.0, max=1.0)
-            surv_vals = surv.sum(dim=1).clamp(min=eps)
-            likelihood_loss[idx] = -torch.log(surv_vals)
+        t_idx = times[idx].clamp(min=0, max=T-1).long()
+        surv = 1.0 - cif[idx, :, t_idx].clamp(min=0.0, max=1.0)
+        surv_vals = surv.sum(dim=1).clamp(min=eps)
+        likelihood_loss[idx] = -torch.log(surv_vals)
 
     L_likelihood = likelihood_loss.mean()
 
-    # Ranking loss
-    L_rank = torch.tensor(0.0, device=device)
-    count_pairs = 0
+    # --------------------
+    # Ranking Loss (vectorized, original DeepHit style)
+    # --------------------
+    # Step 1: event별 mask
+    uncensored_idx = (events >= 0).nonzero(as_tuple=True)[0]
+    if len(uncensored_idx) == 0:
+        return L_likelihood, L_likelihood, torch.tensor(0.0, device=device)
 
-    for k in range(K):
-        idx_k = (events == k).nonzero(as_tuple=True)[0]
-        if idx_k.numel() == 0:
-            continue
+    t_i = times[uncensored_idx].clamp(max=T-1).long()
+    e_i = events[uncensored_idx].long()
 
-        times_k = times[idx_k].long()
-        cif_k = cif[idx_k, k, :]
+    # Step 2: 각 샘플의 CIF(time) 추출
+    # cif_i: [B_uncensored]
+    cif_i = cif[uncensored_idx, e_i, t_i]
 
-        for i_idx, t_i in zip(idx_k, times_k):
-            mask_j = (times > t_i)
-            if mask_j.sum() == 0:
-                continue
+    # Step 3: 모든 샘플에 대해 time 비교 (벡터화)
+    times_expand = times.unsqueeze(0)
+    mask_later = (times_expand > t_i.unsqueeze(1))  # j sample의 time > i sample의 time
 
-            cif_i = cif[i_idx, k, t_i].clamp(0.0, 1.0)
-            cif_j = cif[mask_j, k, t_i].clamp(0.0, 1.0)
-            diff = margin + cif_j - cif_i
-            L_rank += torch.clamp(diff, min=0.0).sum()
-            count_pairs += mask_j.sum().item()
+    # Step 4: 각 사건별 CIF 비교
+    cif_all = cif[:, e_i, t_i]  # shape [B, B_uncensored]
+    cif_diff = margin + cif_all.T - cif_i.unsqueeze(1)  # [B_uncensored, B]
+    cif_diff = cif_diff * mask_later.float()  # valid pairs만 유지
 
-    if count_pairs > 0:
-        L_rank = L_rank / count_pairs
+    L_rank = torch.clamp(cif_diff, min=0).sum() / (mask_later.sum() + eps)
 
+    # --------------------
+    # Combine
+    # --------------------
     loss = L_likelihood + alpha * L_rank
     return loss, L_likelihood.detach(), L_rank.detach()
 
