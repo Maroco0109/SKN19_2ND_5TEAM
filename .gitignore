@@ -1,8 +1,11 @@
-modules/__pycache__/DataAnalysis.cpython-312.pyc
-modules/__pycache__/ModelAnalysis.cpython-312.pyc
-modules/__pycache__/Models.cpython-312.pyc
-modules/__pycache__/DataModify.cpython-312.pyc
+# py 파일 실행시 나오는 캐시 파일
+modules/__pycache__/
+
+# Mac OS 생성 파일
 .DS_Store
+
+# modules 호출 시 생성되는 파일
+myproject_modules.egg-info
 modules/__pycache__/DataAnalysis.cpython-39.pyc
 modules/__pycache__/DataModify.cpython-39.pyc
 modules/__pycache__/ModelAnalysis.cpython-39.pyc
