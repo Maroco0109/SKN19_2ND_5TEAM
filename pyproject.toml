@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "myproject-modules"      # 로컬 이름, 충돌만 안 나면 아무거나 OK
+version = "0.1.0"
+description = "Local modules for data analysis"
+readme = "README.md"
+requires-python = ">=3.9"
+# 로컬 라이브러리이므로 dependencies는 비워둬도 됩니다(환경에 이미 설치했다면).
+# dependencies = ["pandas", "numpy", "matplotlib", "seaborn"]
+
+[tool.setuptools]
+# 루트 바로 아래의 'modules' 패키지 하나만 노출
+packages = ["modules"]
