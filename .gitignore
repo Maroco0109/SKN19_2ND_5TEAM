@@ -6,3 +6,7 @@ modules/__pycache__/
 
 # modules 호출 시 생성되는 파일
 myproject_modules.egg-info
+modules/__pycache__/DataAnalysis.cpython-39.pyc
+modules/__pycache__/DataModify.cpython-39.pyc
+modules/__pycache__/ModelAnalysis.cpython-39.pyc
+modules/__pycache__/Models.cpython-39.pyc

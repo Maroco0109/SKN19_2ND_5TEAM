@@ -12,6 +12,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
+
+import random
 
 class DeepHitSurv(nn.Module) :
     def __init__(self, input_dim, hidden_size=(128, 64), time_bins=50, num_events=4, dropout=0.2) :
@@ -43,7 +46,7 @@ class DeepHitSurv(nn.Module) :
         return logits, pmf, cif
 
 class DeepHitSurvWithSEBlock(nn.Module) :
-    def __init__(self, input_dim, hidden_size=(128, 64), time_bins=50, num_events=4, dropout=0.2, se_ratio=0.25) :
+    def __init__(self, input_dim, hidden_size=(128, 64), time_bins=100, num_events=4, dropout=0.2, se_ratio=0.25) :
         super().__init__()
         h1, h2 = hidden_size
         self.num_events = num_events
@@ -102,60 +105,83 @@ class DeepHitSurvWithSEBlock(nn.Module) :
         return logits, pmf, cif
 
 
-def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05) :
-
+def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-8):
+    """
+    DeepHit original-style loss (Lee et al., 2018)
+    - Uses PMF for likelihood
+    - Uses efficient pairwise ranking loss (vectorized)
+    - Handles censored and competing risks properly
+    """
     B, K, T = pmf.shape
     device = pmf.device
 
-    eps = 1e-8
-
+    # --------------------
+    # Likelihood Loss (Negative log-likelihood)
+    # --------------------
     likelihood_loss = torch.zeros(B, device=device)
 
     uncensored_mask = (events >= 0)
-    if uncensored_mask.any() :
-        idx_uncensored = uncensored_mask.nonzero(as_tuple=False).squeeze(-1)
-        t_uncensored = times[idx_uncensored]
-        e_uncensored = events[idx_uncensored]
+    if uncensored_mask.any():
+        idx = uncensored_mask.nonzero(as_tuple=True)[0]
+        t_idx = times[idx].clamp(min=0, max=T-1).long()
+        e_idx = events[idx].long()
 
-        pmf_vals = pmf[idx_uncensored, e_uncensored, t_uncensored]
-        likelihood_loss[idx_uncensored] = -torch.log(pmf_vals + eps)
+        pmf_vals = pmf[idx, e_idx, t_idx].clamp(min=eps, max=1.0)
+        likelihood_loss[idx] = -torch.log(pmf_vals + eps)
 
     censored_mask = (events < 0)
-    if censored_mask.any() :
-        idx_censored = censored_mask.nonzero(as_tuple=True).squeeze(-1)
-        t_censored = times[idx_censored]
+    if censored_mask.any():
+        idx = censored_mask.nonzero(as_tuple=True)[0]
+        t_idx = times[idx].clamp(min=0, max=T-1).long()
+        
+        cif_sum = cif[idx, :, t_idx].sum(dim=1).clamp(min=0.0, max=1.0)
+        surv_vals = (1.0 - cif_sum).clamp(min=eps)
 
-        surv = 1.0 - cif[idx_censored, :, t_censored].sum(dim=1)
-        likelihood_loss[idx_censored] = -torch.log(surv + eps)
+        likelihood_loss[idx] = -torch.log(surv_vals)
 
     L_likelihood = likelihood_loss.mean()
 
-    L_rank = torch.tensor(0.0, device=device)
-    count_pairs = 0
+    # --------------------
+    # Ranking Loss (vectorized, original DeepHit style)
+    # --------------------
+    # Step 1: event별 mask
+    uncensored_idx = (events >= 0).nonzero(as_tuple=True)[0]
+    if len(uncensored_idx) == 0:
+        return L_likelihood, L_likelihood, torch.tensor(0.0, device=device)
 
-    for k in range(K) :
-        idx_k = (events == k).nonzero(as_tuple=False).squeeze(-1)
-        if idx_k.numel() == 0 :
-            continue
+    t_i = times[uncensored_idx].clamp(max=T-1).long()
+    e_i = events[uncensored_idx].long()
 
-        for i in idx_k :
-            t_i = int(times[i].item())
+    # Step 2: 각 샘플의 CIF(time) 추출
+    # cif_i: [B_uncensored]
+    cif_i = cif[uncensored_idx, e_i, t_i]
 
-            mask_j = (times > t_i)
-            if mask_j.sum() == 0:
-                continue
-            cif_i = cif[i, k, t_i]
-            cif_j = cif[mask_j, k, t_i]
+    # Step 3: 모든 샘플에 대해 time 비교 (벡터화)
+    times_expand = times.unsqueeze(0)
+    mask_later = (times_expand > t_i.unsqueeze(1))  # j sample의 time > i sample의 time
 
-            diff = margin + cif_j - cif_i
-            loss_pairs = torch.clamp(diff, min=0.0).sum()
-            L_rank = L_rank + loss_pairs
-            count_pairs += mask_j.sum().item()
+    # Step 4: 각 사건별 CIF 비교
+    cif_all = cif[:, e_i, t_i]  # shape [B, B_uncensored]
+    cif_diff = margin + cif_all.T - cif_i.unsqueeze(1)  # [B_uncensored, B]
+    cif_diff = cif_diff * mask_later.float()  # valid pairs만 유지
 
-    if count_pairs > 0 :
-        L_rank = L_rank / count_pairs
-    else :
-        L_rank = torch.tensor(0.0, device=device)
+    L_rank = torch.clamp(cif_diff, min=0).sum() / (mask_later.sum() + eps)
 
-    loss = L_likelihood + alpha*L_rank
+    # --------------------
+    # Combine
+    # --------------------
+    loss = L_likelihood + alpha * L_rank
     return loss, L_likelihood.detach(), L_rank.detach()
+
+def set_seed(seed = 42) :
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    
+    # CuDNN 비결정적 동작 방지 (연산 재현성 확보)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
+
