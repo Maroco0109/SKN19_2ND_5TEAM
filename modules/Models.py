@@ -105,27 +105,16 @@ class DeepHitSurvWithSEBlock(nn.Module) :
         return logits, pmf, cif
 
 
-def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-6):
+def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-8):
     """
-    DeepHit loss with:
-    - GPU-safe indexing
-    - batch size 1~N
-    - PMF/CIF clamp
-    - times debug: 범위를 벗어난 경우 출력
+    Stable DeepHit loss (fixed negative loss issue)
     """
-
     B, K, T = pmf.shape
     device = pmf.device
 
-
-    mask_out_of_range = (times < 0) | (times >= T)
-    if mask_out_of_range.any():
-        print("[Warning] times 범위를 벗어난 인덱스:", times[mask_out_of_range])
-
-    # ----- likelihood loss -----
     likelihood_loss = torch.zeros(B, device=device)
 
-    # uncensored
+    # uncensored samples
     uncensored_mask = (events >= 0)
     if uncensored_mask.any():
         idx = uncensored_mask.nonzero(as_tuple=True)[0]
@@ -133,24 +122,23 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-6):
             t_idx = times[idx].clamp(min=0, max=T-1).long()
             e_idx = events[idx].long()
 
-            cum_pmf = pmf[idx, e_idx, :].cumsum(dim=1)
-            pmf_vals = cum_pmf[torch.arange(len(idx), device=device), t_idx].clamp(min=eps)
+            # PMF는 사건-시간 확률 자체를 써야 함 (cumsum ❌)
+            pmf_vals = pmf[idx, e_idx, t_idx].clamp(min=eps, max=1.0)
             likelihood_loss[idx] = -torch.log(pmf_vals)
 
-    # censored
+    # censored samples
     censored_mask = (events < 0)
     if censored_mask.any():
         idx = censored_mask.nonzero(as_tuple=True)[0]
         if idx.numel() > 0:
             t_idx = times[idx].clamp(min=0, max=T-1).long()
-            surv = 1.0 - cif[idx, :, :].cumsum(dim=1)
-            arange_idx = torch.arange(len(idx), device=device)
-            surv_vals = surv[arange_idx, :, t_idx].sum(dim=1).clamp(min=eps)
+            surv = 1.0 - cif[idx, :, t_idx].clamp(min=0.0, max=1.0)
+            surv_vals = surv.sum(dim=1).clamp(min=eps)
             likelihood_loss[idx] = -torch.log(surv_vals)
 
     L_likelihood = likelihood_loss.mean()
 
-    # ----- ranking loss -----
+    # Ranking loss
     L_rank = torch.tensor(0.0, device=device)
     count_pairs = 0
 
