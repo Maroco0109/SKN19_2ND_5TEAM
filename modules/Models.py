@@ -12,6 +12,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
+
+import random
 
 class DeepHitSurv(nn.Module) :
     def __init__(self, input_dim, hidden_size=(128, 64), time_bins=50, num_events=4, dropout=0.2) :
@@ -177,6 +180,15 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-6):
     return loss, L_likelihood.detach(), L_rank.detach()
 
 
+def set_seed(seed = 42) :
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    
+    # CuDNN 비결정적 동작 방지 (연산 재현성 확보)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 
 
