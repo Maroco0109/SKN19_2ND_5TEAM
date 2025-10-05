@@ -127,14 +127,16 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-8):
         e_idx = events[idx].long()
 
         pmf_vals = pmf[idx, e_idx, t_idx].clamp(min=eps, max=1.0)
-        likelihood_loss[idx] = -torch.log(pmf_vals)
+        likelihood_loss[idx] = -torch.log(pmf_vals + eps)
 
     censored_mask = (events < 0)
     if censored_mask.any():
         idx = censored_mask.nonzero(as_tuple=True)[0]
         t_idx = times[idx].clamp(min=0, max=T-1).long()
-        surv = 1.0 - cif[idx, :, t_idx].clamp(min=0.0, max=1.0)
-        surv_vals = surv.sum(dim=1).clamp(min=eps)
+        
+        cif_sum = cif[idx, :, t_idx].sum(dim=1).clamp(min=0.0, max=1.0)
+        surv_vals = (1.0 - cif_sum).clamp(min=eps)
+
         likelihood_loss[idx] = -torch.log(surv_vals)
 
     L_likelihood = likelihood_loss.mean()
@@ -170,7 +172,6 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-8):
     # --------------------
     loss = L_likelihood + alpha * L_rank
     return loss, L_likelihood.detach(), L_rank.detach()
-
 
 def set_seed(seed = 42) :
     random.seed(seed)
