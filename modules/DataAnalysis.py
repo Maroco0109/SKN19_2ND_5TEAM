@@ -32,7 +32,6 @@ def show_value_counts(df, cols=None, boundary=30) :
         print(value_counts)
         print("-" * 20)
 
-
 # 예시 코드
 def show_graph(df) :
     pass

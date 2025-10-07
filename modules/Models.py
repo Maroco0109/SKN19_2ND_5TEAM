@@ -12,8 +12,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.optim as optim
 import numpy as np
 
+from sklearn.base import BaseEstimator, RegressorMixin
 import random
 
 class DeepHitSurv(nn.Module) :
@@ -46,7 +48,7 @@ class DeepHitSurv(nn.Module) :
         return logits, pmf, cif
 
 class DeepHitSurvWithSEBlock(nn.Module) :
-    def __init__(self, input_dim, hidden_size=(128, 64), time_bins=100, num_events=4, dropout=0.2, se_ratio=0.25) :
+    def __init__(self, input_dim, hidden_size=(128, 64), time_bins=91, num_events=4, dropout=0.2, se_ratio=0.25) :
         super().__init__()
         h1, h2 = hidden_size
         self.num_events = num_events
@@ -103,7 +105,6 @@ class DeepHitSurvWithSEBlock(nn.Module) :
         cif = torch.cumsum(pmf, dim=-1)
 
         return logits, pmf, cif
-
 
 def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-8):
     """
@@ -172,6 +173,80 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-8):
     # --------------------
     loss = L_likelihood + alpha * L_rank
     return loss, L_likelihood.detach(), L_rank.detach()
+
+
+class WeightedCoxRiskEstimator(BaseEstimator, RegressorMixin):
+    def __init__(self, num_events=4, lr=1e-2, epochs=100, weights=None, verbose=False, device='cpu'):
+        self.num_events = num_events
+        self.lr = lr
+        self.epochs = epochs
+        self.verbose = verbose
+        self.device = device
+        
+        # 가중치는 학습에 사용되지 않음
+        if weights is None:
+            self.weights = torch.ones(num_events, device=device) / num_events
+        else:
+            self.weights = torch.tensor(weights, dtype=torch.float32, device=device)
+
+    def _cox_ph_loss(self, risk_score, times, events):
+        risk_score = risk_score.squeeze()
+        loss = 0.0
+        uncensored_idx = (events >= 0).nonzero()[0]
+        if len(uncensored_idx) == 0:
+            return torch.tensor(0.0, device=self.device)
+        for i in uncensored_idx:
+            t_i = times[i]
+            mask = times >= t_i
+            loss += - (risk_score[i] - torch.log(torch.exp(risk_score[mask]).sum()))
+        return loss / len(uncensored_idx)
+
+    def fit(self, X, times, events):
+        X = torch.tensor(X, dtype=torch.float32, device=self.device)
+        times = torch.tensor(times, dtype=torch.float32, device=self.device)
+        events = torch.tensor(events, dtype=torch.float32, device=self.device)
+
+        B, K = X.shape
+        assert K == self.num_events
+
+        # 사건별 단층 선형 회귀(SLP)
+        self.event_linears = nn.ModuleList([nn.Linear(1, 1) for _ in range(K)]).to(self.device)
+
+        optimizer = optim.Adam(self.event_linears.parameters(), lr=self.lr)
+
+        for epoch in range(self.epochs):
+            optimizer.zero_grad()
+
+            # 사건별 위험점수
+            r_list = [self.event_linears[k](X[:, k:k+1]) for k in range(K)]
+            r_stack = torch.cat(r_list, dim=1)  # (B, K)
+
+            # 학습 시에는 단순 평균 (weights 미적용)
+            risk_score = r_stack.mean(dim=1)
+
+            # Cox loss 계산
+            loss = self._cox_ph_loss(risk_score, times, events)
+            loss.backward()
+            optimizer.step()
+
+            if self.verbose and (epoch % 10 == 0 or epoch == self.epochs - 1):
+                print(f"Epoch {epoch+1}/{self.epochs}, Loss: {loss.item():.6f}")
+
+        return self
+
+    def predict(self, X):
+        X = torch.tensor(X, dtype=torch.float32, device=self.device)
+        r_list = [self.event_linears[k](X[:, k:k+1]) for k in range(self.num_events)]
+        r_stack = torch.cat(r_list, dim=1)
+
+        # 예측 시에만 가중치 적용
+        risk_score = (r_stack * self.weights).sum(dim=1)
+
+        # Sigmoid 적용 후 0~100 스케일
+        risk_score_scaled = torch.sigmoid(risk_score) * 100
+
+        return risk_score_scaled.detach().cpu().numpy()
+
 
 def set_seed(seed = 42) :
     random.seed(seed)

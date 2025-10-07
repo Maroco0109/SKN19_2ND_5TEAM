@@ -61,10 +61,6 @@ class DataPreprocessing() :
             return df.copy()
         return df.drop(columns=list(cols), errors='ignore')
 
-    """
-    모든 전처리 기능 함수로 구현
-    """
-
     # categorical한 데이터 encoding
     def category_encoding(self, df: pd.DataFrame, categories: Optional[Dict[str, Dict[str, int]]] = None, encoding: str = 'label') -> Tuple[pd.DataFrame, Dict[str, Dict[str, int]]]:
         if df is None:
@@ -358,7 +354,7 @@ class CancerDataset(Dataset) :
         self.transform = transform
 
         if self.transform is not None:
-            df = self.transform(df)
+            df, _, _ = self.transform(df)
 
         self.time = df[time_column].values.astype(int) if time_column else None
         self.target = df[target_column].values.astype(int) if target_column else None
