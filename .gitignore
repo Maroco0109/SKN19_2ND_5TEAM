@@ -10,3 +10,4 @@ modules/__pycache__/DataAnalysis.cpython-39.pyc
 modules/__pycache__/DataModify.cpython-39.pyc
 modules/__pycache__/ModelAnalysis.cpython-39.pyc
 modules/__pycache__/Models.cpython-39.pyc
+data/parameters/deephit_model_without_drop_cols.pth
