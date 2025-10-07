@@ -61,29 +61,61 @@ class DataPreprocessing() :
             return df.copy()
         return df.drop(columns=list(cols), errors='ignore')
 
-    # categorical한 데이터 encoding
-    def category_encoding(self, df: pd.DataFrame, categories: Optional[Dict[str, Dict[str, int]]] = None, encoding: str = 'label') -> Tuple[pd.DataFrame, Dict[str, Dict[str, int]]]:
+    # categorical한 데이터 encoding (일관된 매핑 유지)
+    def category_encoding(
+        self,
+        df: pd.DataFrame,
+        categories: Optional[Dict[str, Dict[str, int]]] = None,
+        encoding: str = 'label'
+    ) -> Tuple[pd.DataFrame, Dict[str, Dict[str, int]]]:
         if df is None:
             raise ValueError('Input DataFrame is required for category encoding')
 
-        categories = {**categories} if categories else {}
+        categories = {**(categories or {})}
         categorical_col = DataSelect.return_cols(df, 'categorical', boundary=100)
         df_encoded = df.copy()
 
         if encoding == 'label':
             categories['encoding_type'] = 'label'
             for col in categorical_col:
-                unique_vals = df_encoded[col].dropna().unique()
-                label_map = {val: idx for idx, val in enumerate(unique_vals)}
-                df_encoded[col] = df_encoded[col].map(label_map)
+                series = df_encoded[col].astype('object')
+                # 기존 매핑을 유지하고, 새로운 값만 뒤에 추가합니다.
+                existing = categories.get(col, {})
+                label_map = {k: v for k, v in existing.items() if isinstance(v, int) and v >= 0}
+                next_id = (max(label_map.values()) + 1) if label_map else 0
+                for val in series.dropna().unique():
+                    if val not in label_map:
+                        label_map[val] = next_id
+                        next_id += 1
+                df_encoded[col] = series.map(label_map).fillna(-1).astype(int)
+                label_map['__MISSING__'] = -1
                 categories[col] = label_map
 
         elif encoding == 'onehot':
             categories['encoding_type'] = 'onehot'
             for col in categorical_col:
-                dummies = pd.get_dummies(df_encoded[col], prefix=col)
+                series = df_encoded[col].astype('object')
+                # 기존 카테고리 목록 유지 + 신규 값 추가
+                existing_cols = categories.get(col)
+                if isinstance(existing_cols, list):
+                    # 기존 리스트는 dummy 컬럼명(prefix 포함)일 수 있으므로 카테고리 이름만 복원
+                    prefix = f"{col}_"
+                    known = [c[len(prefix):] if c.startswith(prefix) else c for c in existing_cols]
+                else:
+                    known = []
+                for val in series.dropna().unique():
+                    if val not in known:
+                        known.append(val)
+                # 카테고리 dtype으로 고정 후 더미 생성(예상 컬럼 모두 포함하도록 후처리)
+                cat = pd.Categorical(series, categories=known)
+                dummies = pd.get_dummies(cat, prefix=col)
+                expected_cols = [f"{col}_{v}" for v in known]
+                for expect in expected_cols:
+                    if expect not in dummies.columns:
+                        dummies[expect] = 0
+                dummies = dummies[expected_cols]
                 df_encoded = pd.concat([df_encoded.drop(columns=[col]), dummies], axis=1)
-                categories[col] = dummies.columns.tolist()
+                categories[col] = expected_cols
 
         else:
             raise ValueError(f'알 수 없는 encoding_type: {encoding}')
@@ -151,7 +183,16 @@ class DataPreprocessing() :
         return binned.fillna(-1).astype(int)
 
     # 순서형 컬럼을 지정된 규칙에 따라 정수 라벨로 변환
-    def encode_ordinal_columns(self, df: pd.DataFrame, ordinal_config: Optional[Dict[str, Iterable]] = None) -> Tuple[pd.DataFrame, Dict[str, Dict[str, int]]]:
+    def encode_ordinal_columns(
+        self,
+        df: pd.DataFrame,
+        ordinal_config: Optional[Dict[str, Iterable]] = None
+    ) -> Tuple[pd.DataFrame, Dict[str, Dict[str, int]]]:
+        """
+        순서형 컬럼을 일관된 규칙으로 정수 라벨로 변환합니다.
+        - definition == 'numeric' 인 경우: 순위 인덱스가 아닌 원래의 수치값을 그대로 사용해 일관성을 보장합니다.
+        - definition 이 리스트인 경우: 정의된 전체 순서를 매핑으로 사용하여, 데이터셋마다 등장 여부와 무관하게 같은 값은 같은 정수로 인코딩됩니다.
+        """
         config = ordinal_config or self.ORDINAL_CONFIG_DEFAULT
         df_encoded = df.copy()
         mappings: Dict[str, Dict[str, int]] = {}
@@ -160,51 +201,56 @@ class DataPreprocessing() :
             if col not in df_encoded.columns:
                 continue
             series = df_encoded[col]
-            present_values = series.dropna().unique()
 
             if isinstance(definition, str):
                 if definition != 'numeric':
                     raise ValueError(f'Unsupported ordinal definition: {definition}')
-                numeric_series = pd.to_numeric(pd.Series(present_values), errors='coerce')
-                if numeric_series.isna().all():
-                    order = sorted(present_values, key=lambda x: str(x))
-                else:
-                    ordered_pairs = sorted(
-                        [(num, val) for num, val in zip(numeric_series, present_values) if not pd.isna(num)],
-                        key=lambda pair: pair[0]
-                    )
-                    order = [val for _, val in ordered_pairs]
-                    non_numeric_vals = [val for num, val in zip(numeric_series, present_values) if pd.isna(num)]
-                    order.extend(sorted(non_numeric_vals, key=lambda x: str(x)))
+                # 수치형으로 직접 변환하여 사용 (순위가 아닌 절대값 보존)
+                df_encoded[col] = pd.to_numeric(series, errors='coerce')
+                mappings[col] = {'__TYPE__': 'numeric'}
             else:
-                present_set = set(present_values)
-                order = [value for value in definition if value in present_set]
-                remaining = sorted(present_set - set(order), key=str)
-                order.extend(remaining)
-
-            mapping = {value: idx for idx, value in enumerate(order)}
-            mapping['__MISSING__'] = -1
-            df_encoded[col] = series.map(mapping).fillna(-1).astype(int)
-            mappings[col] = mapping
+                # 사전 정의된 전체 순서를 그대로 매핑으로 사용
+                order = list(definition)
+                mapping = {value: idx for idx, value in enumerate(order)}
+                mapping['__MISSING__'] = -1
+                df_encoded[col] = series.map(mapping).fillna(-1).astype(int)
+                mappings[col] = mapping
 
         return df_encoded, mappings
 
     # 명목형 컬럼을 팩터라이즈하여 정수형으로 변환
     @staticmethod
-    def encode_nominal_columns(df: pd.DataFrame, exclude_columns: Optional[Iterable[str]] = None) -> Tuple[pd.DataFrame, Dict[str, Dict[str, int]]]:
+    def encode_nominal_columns(
+        df: pd.DataFrame,
+        exclude_columns: Optional[Iterable[str]] = None,
+        existing_mappings: Optional[Dict[str, Dict[str, int]]] = None,
+    ) -> Tuple[pd.DataFrame, Dict[str, Dict[str, int]]]:
+        """
+        명목형 컬럼을 정수로 인코딩. 기존 매핑이 주어지면 그대로 유지하면서 신규 값만 뒤에 추가합니다.
+        결측/미등록 값은 -1로 치환합니다.
+        """
         excludes = set(exclude_columns or [])
         df_encoded = df.copy()
         mappings: Dict[str, Dict[str, int]] = {}
+        existing_mappings = existing_mappings or {}
 
         for col in df_encoded.columns:
             if col in excludes or pd.api.types.is_numeric_dtype(df_encoded[col]):
                 continue
             series = df_encoded[col].astype('object')
-            codes, uniques = pd.factorize(series, sort=True)
-            df_encoded[col] = codes
-            mapping = {value: idx for idx, value in enumerate(uniques)}
-            mapping['__MISSING__'] = -1
-            mappings[col] = mapping
+
+            prev = existing_mappings.get(col, {})
+            value_map = {k: v for k, v in prev.items() if isinstance(v, int) and v >= 0}
+            next_id = (max(value_map.values()) + 1) if value_map else 0
+
+            for val in series.dropna().unique():
+                if val not in value_map:
+                    value_map[val] = next_id
+                    next_id += 1
+
+            df_encoded[col] = series.map(value_map).fillna(-1).astype(int)
+            value_map['__MISSING__'] = -1
+            mappings[col] = value_map
 
         return df_encoded, mappings
 
@@ -248,7 +294,8 @@ class DataPreprocessing() :
         cod_col: str = 'COD to site recode',
         survival_flag_col: str = 'Survival months flag',
         vital_status_col: str = 'Vital status recode (study cutoff used)',
-        drop_label_source: bool = True
+        drop_label_source: bool = True,
+        existing_meta: Optional[Dict[str, Dict]] = None,
     ) -> Tuple[pd.DataFrame, pd.Series, Dict[str, Dict]]:
         df_work = df.copy()
 
@@ -284,7 +331,14 @@ class DataPreprocessing() :
         else:
             exclude.update([cod_col, survival_flag_col, vital_status_col])
 
-        df_work, nominal_mappings = self.encode_nominal_columns(df_work, exclude_columns=exclude)
+        prev_nominal = None
+        if existing_meta and isinstance(existing_meta.get('nominal_mappings'), dict):
+            prev_nominal = existing_meta.get('nominal_mappings')
+        df_work, nominal_mappings = self.encode_nominal_columns(
+            df_work,
+            exclude_columns=exclude,
+            existing_mappings=prev_nominal,
+        )
         df_work = df_work.reset_index(drop=True)
 
         meta: Dict[str, Dict] = {
@@ -313,7 +367,8 @@ class DataPreprocessing() :
         cod_col: str = 'COD to site recode',
         survival_flag_col: str = 'Survival months flag',
         vital_status_col: str = 'Vital status recode (study cutoff used)',
-        drop_label_source: bool = True
+        drop_label_source: bool = True,
+        existing_meta: Optional[Dict[str, Dict]] = None,
     ):
         df_input = df if df is not None else self.raw_data
         if df_input is None:
@@ -340,6 +395,7 @@ class DataPreprocessing() :
             survival_flag_col=survival_flag_col,
             vital_status_col=vital_status_col,
             drop_label_source=drop_label_source,
+            existing_meta=existing_meta or self.meta,
         )
         self.encoded_df = processed_df
         self.meta = meta
