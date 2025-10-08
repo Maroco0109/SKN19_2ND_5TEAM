@@ -18,13 +18,29 @@ import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
 import random
 
+# 기본 DeepHit 모델
 class DeepHitSurv(nn.Module) :
-    def __init__(self, input_dim, hidden_size=(128, 64), time_bins=50, num_events=4, dropout=0.2) :
+
+    def __init__(self, input_dim, hidden_size=(128, 64), time_bins=91, num_events=4, dropout=0.2) :
+        """
+        
+        input_dim : 특성의 개수
+        hidden_size : hidden layer의 node 개수 (h1, h2)
+        time_bins : 시간축을 나눌 개수 (출력의 개수)
+        num_event : 각각 사건의 개수
+
+        """
+
         super().__init__()
         h1, h2 = hidden_size
         self.num_events = num_events
         self.T = time_bins
-
+        
+        """
+        모델의 구조 : 
+        features -> h1 -> h2
+        h2 -> 4개의 사건 heads -> time bins
+        """
         self.shared = nn.Sequential(
             nn.Linear(input_dim, h1),
             nn.ReLU(),
@@ -35,20 +51,31 @@ class DeepHitSurv(nn.Module) :
         )
 
         self.heads = nn.ModuleList([
-            nn.Linear(h2, time_bins) for _ in range(num_events)
+            nn.Linear(h2, time_bins) for _ in range(num_events)     # 사건 수만큼의 heads 생성
         ])
 
     def forward(self, x) :
         s = self.shared(x)
         logits = torch.stack([head(s) for head in self.heads], dim=1)
 
-        pmf = F.softmax(logits, dim=-1)
-        cif = torch.cumsum(pmf, dim=-1)
+        pmf = F.softmax(logits, dim=-1) # 각 사건의 발생확률 계산
+        cif = torch.cumsum(pmf, dim=-1) # 각 사건의 누적발생확률 계산
 
-        return logits, pmf, cif
+        return logits, pmf, cif         # 로짓값, pmf, cif 반환
 
+
+# SEBlock을 결합한 Deephit 모델
 class DeepHitSurvWithSEBlock(nn.Module) :
     def __init__(self, input_dim, hidden_size=(128, 64), time_bins=91, num_events=4, dropout=0.2, se_ratio=0.25) :
+        """
+        
+        input_dim : 특성의 개수
+        hidden_size : hidden layer의 node 개수 (h1, h2)
+        time_bins : 시간축을 나눌 개수 (출력의 개수)
+        num_event : 각각 사건의 개수
+        se_ratio : SEBlock에서 사용할 노드의 크기 비율
+
+        """
         super().__init__()
         h1, h2 = hidden_size
         self.num_events = num_events
@@ -56,6 +83,7 @@ class DeepHitSurvWithSEBlock(nn.Module) :
         self.input_dim = input_dim
 
 
+        # 모델 처음에 붙는 SEBlock : Feature weighting의 역할을 함
         se_hidden = max(1, int(input_dim * se_ratio))
         self.se_block = nn.Sequential(
             nn.Linear(input_dim, se_hidden),
@@ -64,6 +92,7 @@ class DeepHitSurvWithSEBlock(nn.Module) :
             nn.Sigmoid()
         )
 
+        # 각 branch에 붙는 SEBlock : 각 사건 마다 중요한 Feature를 Selection
         se_hidden_shared = max(1, int(h2 * se_ratio))
         self.se_block_event = nn.ModuleList([        
             nn.Sequential(
@@ -74,7 +103,11 @@ class DeepHitSurvWithSEBlock(nn.Module) :
             ) for _ in range(num_events)
         ])
 
-
+        """
+        모델의 구조 : 
+        features -> SEBlock -> h1 -> h2
+        h2 + features -> 4개의 사건 heads -> SEBlock-> time bins
+        """
         self.shared = nn.Sequential(
             nn.Linear(input_dim, h1),
             nn.ReLU(),
@@ -89,15 +122,16 @@ class DeepHitSurvWithSEBlock(nn.Module) :
         ])
 
     def forward(self, x) :
-        scale = self.se_block(x)
-        x_scaled = x * scale
 
-        s = self.shared(x_scaled)
+        scale = self.se_block(x)    # SEBlock 수행
+        x_scaled = x * scale        # x를 스케일링
+
+        s = self.shared(x_scaled)   # 공유 브랜치 통과
 
         logits_list = []
         for k in range(self.num_events) :
-            s_scaled = s * self.se_block_event[k](s)
-            logits_list.append(self.heads[k](s_scaled))
+            s_scaled = s * self.se_block_event[k](s)        # 각 브랜치에 대해 SEBlock 통과
+            logits_list.append(self.heads[k](s_scaled))     # s를 스케일링
 
         logits = torch.stack(logits_list, dim=1)
 
@@ -105,6 +139,85 @@ class DeepHitSurvWithSEBlock(nn.Module) :
         cif = torch.cumsum(pmf, dim=-1)
 
         return logits, pmf, cif
+
+
+# Concat을 추가한 모델 구현
+class DeepHitSurvWithSEBlockConcat(nn.Module):
+    def __init__(self, input_dim, hidden_size=(128, 64), time_bins=91, num_events=4, dropout=0.2, se_ratio=0.25):
+        """
+        input_dim : 입력 특성 개수
+        hidden_size : 공유 레이어 hidden node 수 (h1, h2)
+        time_bins : 시간축 분할 수
+        num_events : 사건 개수
+        se_ratio : SEBlock 내부 차원 비율
+        """
+        super().__init__()
+        h1, h2 = hidden_size
+        self.num_events = num_events
+        self.T = time_bins
+        self.input_dim = input_dim
+        self.h2 = h2
+
+        # 초기 SEBlock: 입력 feature weighting
+        se_hidden = max(1, int(input_dim * se_ratio))
+        self.se_block = nn.Sequential(
+            nn.Linear(input_dim, se_hidden),
+            nn.ReLU(),
+            nn.Linear(se_hidden, input_dim),
+            nn.Sigmoid()
+        )
+
+        # 사건별 SEBlock: 사건별 feature weighting
+        se_hidden_shared = max(1, int(h2 * se_ratio))
+        self.se_block_event = nn.ModuleList([
+            nn.Sequential(
+                nn.Linear(h2, se_hidden_shared),
+                nn.ReLU(),
+                nn.Linear(se_hidden_shared, h2),
+                nn.Sigmoid()
+            ) for _ in range(num_events)
+        ])
+
+        # 공유 레이어
+        self.shared = nn.Sequential(
+            nn.Linear(input_dim, h1),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(h1, h2),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+        )
+
+        # 사건별 head: 입력 dim = h2 + input_dim
+        self.heads = nn.ModuleList([
+            nn.Linear(h2 + input_dim, time_bins) for _ in range(num_events)
+        ])
+
+    def forward(self, x):
+        # 1) 입력 SEBlock
+        scale = self.se_block(x)
+        x_scaled = x * scale
+
+        # 2) 공유 브랜치
+        s = self.shared(x_scaled)
+
+        logits_list = []
+        for k in range(self.num_events):
+            # 사건별 SEBlock 적용
+            s_scaled = s * self.se_block_event[k](s)
+
+            # 공유 feature + 원본 feature concatenation
+            s_combined = torch.cat([s_scaled, x], dim=-1)  # shape: (batch_size, h2 + input_dim)
+
+            # 사건별 head
+            logits_list.append(self.heads[k](s_combined))
+
+        logits = torch.stack(logits_list, dim=1)  # shape: (batch_size, num_events, time_bins)
+        pmf = F.softmax(logits, dim=-1)
+        cif = torch.cumsum(pmf, dim=-1)
+
+        return logits, pmf, cif
+
 
 def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-8):
     """
@@ -173,7 +286,6 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-8):
     # --------------------
     loss = L_likelihood + alpha * L_rank
     return loss, L_likelihood.detach(), L_rank.detach()
-
 
 class WeightedCoxRiskEstimator(BaseEstimator, RegressorMixin):
     def __init__(self, num_events=4, lr=1e-2, epochs=100, weights=None, verbose=False, device='cpu'):
@@ -246,7 +358,6 @@ class WeightedCoxRiskEstimator(BaseEstimator, RegressorMixin):
         risk_score_scaled = torch.sigmoid(risk_score) * 100
 
         return risk_score_scaled.detach().cpu().numpy()
-
 
 def set_seed(seed = 42) :
     random.seed(seed)
