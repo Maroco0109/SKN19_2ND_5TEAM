@@ -66,7 +66,7 @@ class DeepHitSurv(nn.Module) :
 
 # SEBlock을 결합한 Deephit 모델
 class DeepHitSurvWithSEBlock(nn.Module) :
-    def __init__(self, input_dim, hidden_size=(128, 64), time_bins=91, num_events=4, dropout=0.2, se_ratio=0.25) :
+    def __init__(self, input_dim, hidden_size=(128, 64), time_bins=91, num_events=4, dropout=0.2, se_ratio=0.25, cnn_kernel=3) :
         """
         
         input_dim : 특성의 개수
@@ -121,6 +121,12 @@ class DeepHitSurvWithSEBlock(nn.Module) :
             nn.Linear(h2, time_bins) for _ in range(num_events)
         ])
 
+        # 사건별 1D CNN (시간 축 smoothing)
+        self.cnn_blocks = nn.ModuleList([
+            nn.Conv1d(in_channels=1, out_channels=1, kernel_size=cnn_kernel, padding=cnn_kernel//2)
+            for _ in range(num_events)
+        ])
+
     def forward(self, x) :
 
         scale = self.se_block(x)    # SEBlock 수행
@@ -129,14 +135,27 @@ class DeepHitSurvWithSEBlock(nn.Module) :
         s = self.shared(x_scaled)   # 공유 브랜치 통과
 
         logits_list = []
-        for k in range(self.num_events) :
-            s_scaled = s * self.se_block_event[k](s)        # 각 브랜치에 대해 SEBlock 통과
-            logits_list.append(self.heads[k](s_scaled))     # s를 스케일링
+        pmf_list = []
+        cif_list = []
 
-        logits = torch.stack(logits_list, dim=1)
+        for k in range(self.num_events):
+            # 사건별 SEBlock
+            s_scaled = s * self.se_block_event[k](s)
 
-        pmf = F.softmax(logits, dim=-1)
-        cif = torch.cumsum(pmf, dim=-1)
+            # Linear head
+            logits = self.heads[k](s_scaled)  # (B, time_bins)
+
+            # CNN 적용을 위해 shape 변경: (B, 1, time_bins)
+            logits_cnn = logits.unsqueeze(1)
+            logits_smooth = self.cnn_blocks[k](logits_cnn).squeeze(1)
+
+            # Softmax & CIF
+            pmf = F.softmax(logits_smooth, dim=-1)
+            cif = torch.cumsum(pmf, dim=-1)
+
+            logits_list.append(logits_smooth)
+            pmf_list.append(pmf)
+            cif_list.append(cif)
 
         return logits, pmf, cif
 
