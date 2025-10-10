@@ -54,13 +54,16 @@ def compute_survival_metrics(pmf: torch.Tensor):
     # ----- CIF (누적 사건 확률) -----
     cif = torch.cumsum(pmf, dim=2)  # (B, E, T)
 
-    # ----- 1️⃣ 생존 확률 -----
-    survival = 1 - torch.sum(cif, dim=1)  # (B, T)
+    # cif: (B, E, T) - cumulative incidence function
+    # pmf: (B, E, T) - 사건 발생 확률
 
-    # ----- 2️⃣ 위험도 (전체 사건 발생 확률 합) -----
+    # ----- 생존 확률 (독립 사건 가정) -----
+    survival = torch.prod(1 - cif, dim=1)  # (B, T)
+
+    # ----- 위험도 (전체 사건 발생 확률 합) -----
     risk_score = pmf.sum(dim=(1, 2))  # (B,)
 
-    # ----- 3️⃣ 기대 생존 시간 -----
+    # ----- 기대 생존 시간 -----
     time_index = torch.arange(1, pmf.shape[2] + 1, device=pmf.device).float()  # [1, 2, ..., T]
     expected_time = (survival * time_index).sum(dim=1)  # (B,)
 
