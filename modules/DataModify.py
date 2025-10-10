@@ -54,6 +54,7 @@ class DataPreprocessing() :
         self.encoded_df: Optional[pd.DataFrame] = None
         self.target: Optional[pd.Series] = None
 
+    @staticmethod
     def drop_cols(self, df, cols=None) :
         if df is None:
             raise ValueError('DataFrame cannot be None when dropping columns')
@@ -410,7 +411,7 @@ class CancerDataset(Dataset) :
         self.transform = transform
 
         if self.transform is not None:
-            df, _, _ = self.transform(df)
+            df = self.transform(df)
 
         self.time = df[time_column].values.astype(int) if time_column else None
         self.target = df[target_column].values.astype(int) if target_column else None
