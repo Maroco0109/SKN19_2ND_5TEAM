@@ -54,6 +54,9 @@ class DataPreprocessing() :
         self.encoded_df: Optional[pd.DataFrame] = None
         self.target: Optional[pd.Series] = None
 
+        # SEER Summary Stage 확장 지역 코드(2004+) 컬럼명 상수
+        self.SEER_SUMMARY_STAGE_COL = 'Combined Summary Stage with Expanded Regional Codes (2004+)'
+
     @staticmethod
     def drop_cols(self, df, cols=None) :
         if df is None:
@@ -73,12 +76,17 @@ class DataPreprocessing() :
             raise ValueError('Input DataFrame is required for category encoding')
 
         categories = {**(categories or {})}
-        categorical_col = DataSelect.return_cols(df, 'categorical', boundary=100)
-        df_encoded = df.copy()
+        # SEER Summary Stage 컬럼 표준화(요청된 매핑 적용)
+        df_standardized = self._normalize_seer_summary_stage(df)
+        categorical_col = DataSelect.return_cols(df_standardized, 'categorical', boundary=100)
+        df_encoded = df_standardized.copy()
 
         if encoding == 'label':
             categories['encoding_type'] = 'label'
             for col in categorical_col:
+                # 숫자형(이미 인코딩된) 컬럼은 건너뜀
+                if pd.api.types.is_numeric_dtype(df_encoded[col]):
+                    continue
                 series = df_encoded[col].astype('object')
                 # 기존 매핑을 유지하고, 새로운 값만 뒤에 추가합니다.
                 existing = categories.get(col, {})
@@ -95,6 +103,9 @@ class DataPreprocessing() :
         elif encoding == 'onehot':
             categories['encoding_type'] = 'onehot'
             for col in categorical_col:
+                # 숫자형(이미 인코딩된) 컬럼은 건너뜀
+                if pd.api.types.is_numeric_dtype(df_encoded[col]):
+                    continue
                 series = df_encoded[col].astype('object')
                 # 기존 카테고리 목록 유지 + 신규 값 추가
                 existing_cols = categories.get(col)
@@ -182,6 +193,49 @@ class DataPreprocessing() :
         binned = (numeric // bin_size).astype('Int64')
         binned = binned.where(~numeric.isna(), other=pd.NA)
         return binned.fillna(-1).astype(int)
+
+    # SEER Summary Stage(2004+)를 0/1/2/3/9로 표준화(정수 인코딩)
+    def _normalize_seer_summary_stage(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        'Combined Summary Stage with Expanded Regional Codes (2004+)' 컬럼을
+        다음 규칙으로 통일합니다.
+          - In situ            -> 0
+          - Localized          -> 1
+          - Regional (모든 세부 분류 포함) -> 2
+          - Distant            -> 3
+          - Unknown/Unstaged/N/A/Blank 등 -> 9
+
+        원본 컬럼이 없으면 그대로 반환합니다.
+        """
+        col = self.SEER_SUMMARY_STAGE_COL
+        if col not in df.columns:
+            return df
+
+        def map_stage(val) -> int:
+            if pd.isna(val):
+                return 9
+            s = str(val).strip().lower()
+            if s == 'in situ' or 'in situ' in s:
+                return 0
+            if s.startswith('localized') or s == 'localized':
+                return 1
+            if s.startswith('regional'):
+                # regional by direct extension only, by lymph nodes only, both, nos 등 포함
+                return 2
+            if s.startswith('distant') or s == 'distant':
+                return 3
+            # Unknown/unstaged/blank/not applicable 등은 9
+            unknown_keys = ['unknown', 'unstaged', 'not applicable', 'blank', 'n/a', 'na', 'not known']
+            if any(k in s for k in unknown_keys) or s in {'', '.'}:
+                return 9
+            # 기타 예외값은 보수적으로 9 처리
+            return 9
+
+        df_out = df.copy()
+        df_out[col] = df_out[col].map(map_stage)
+        # 명시적으로 정수형 보장
+        df_out[col] = pd.to_numeric(df_out[col], errors='coerce').fillna(9).astype(int)
+        return df_out
 
     # 순서형 컬럼을 지정된 규칙에 따라 정수 라벨로 변환
     def encode_ordinal_columns(
@@ -298,7 +352,8 @@ class DataPreprocessing() :
         drop_label_source: bool = True,
         existing_meta: Optional[Dict[str, Dict]] = None,
     ) -> Tuple[pd.DataFrame, pd.Series, Dict[str, Dict]]:
-        df_work = df.copy()
+        # 먼저 SEER Summary Stage 컬럼을 요구된 규칙으로 표준화
+        df_work = self._normalize_seer_summary_stage(df)
 
         labels, valid_mask, label_desc = self.create_combined_label(
             df_work,
