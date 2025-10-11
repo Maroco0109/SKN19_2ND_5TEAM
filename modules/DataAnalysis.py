@@ -270,8 +270,14 @@ def _plot_corr_with_target(encoded_df):
     if 'target_label' not in encoded_df.columns:
         return
     num_cols = [c for c in encoded_df.columns if pd.api.types.is_numeric_dtype(encoded_df[c])]
-    # 불필요 식별자 컬럼 제외
-    exclude_cols = {'Unnamed: 0', 'Patient ID'}
+    # 불필요 식별자 및 타깃 유도 변수 제외
+    exclude_cols = {
+        'Unnamed: 0',
+        'Patient ID',
+        # 요청: 생존 상태, COD 제외
+        'Vital status recode (study cutoff used)__enc',
+        'COD to site recode__enc',
+    }
     num_cols = [c for c in num_cols if c not in exclude_cols]
     if not num_cols:
         return
@@ -618,8 +624,48 @@ def _plot_stage_surgery_gender_age(encoded_cod_df):
 
     # 4-1. 병기별 환자 분포 (도넛)
     stage_col = 'Combined Summary Stage with Expanded Regional Codes (2004+)'
+    # 병기 컬럼을 표준화(확장코드 포함 → 0/1/2/3/9로 집계)
+    stage_num = None
     if stage_col in df.columns:
-        stage_counts = df[stage_col].value_counts().sort_index()
+        series = df[stage_col]
+        # 병기(Stage) 분류 규칙 요약
+        # - 입력: SEER "Combined Summary Stage with Expanded Regional Codes (2004+)"
+        # - 입력 형태: 정수(확장 코드: 0,1,2,3,4,5,6,7,9) 또는 텍스트('In situ', 'Localized', 'Regional', 'Distant', 'Unknown/...')
+        # - 출력: 기본 병기 5단계 {0, 1, 2, 3, 9}
+        #   * 0 -> 0 (In situ)
+        #   * 1 -> 1 (Localized)
+        #   * 2/3/4/5 -> 2 (Regional)
+        #   * 7 -> 3 (Distant)
+        #   * 6/9/그 외 -> 9 (Unknown/Unstaged)
+        # - 배경: 확장 코드는 Regional을 2~5로 세분화하고 7은 Distant, 6은 Unstaged/Unknown 계열입니다.
+        #        분석 일관성을 위해 위와 같이 기본 병기(0/1/2/3/9)로 접어 사용합니다.
+        # - 텍스트가 들어온 경우에는 키워드('in situ','localized','regional','distant')를 기반으로 동일 규칙을 적용합니다.
+        # - 숫자/문자 혼재시: 숫자로 해석 가능하면 확장 코드 매핑을 우선 적용하고, 아니면 텍스트 규칙을 적용합니다.
+        exp_to_basic = {0:0, 1:1, 2:2, 3:2, 4:2, 5:2, 6:9, 7:3, 9:9}
+        if pd.api.types.is_numeric_dtype(series):
+            stage_num = series.map(lambda v: exp_to_basic.get(int(v) if pd.notna(v) else v, 9))
+        else:
+            # 문자열일 경우: 숫자 문자열은 확장코드 매핑, 그 외는 텍스트 규칙 매핑
+            def _map_stage_any(v):
+                if pd.isna(v):
+                    return 9
+                s = str(v).strip().lower()
+                # 숫자 형태면 확장코드 매핑 우선
+                try:
+                    iv = int(float(s))
+                    return exp_to_basic.get(iv, 9)
+                except Exception:
+                    ...
+                if 'in situ' in s: return 0
+                if s.startswith('localized'): return 1
+                if s.startswith('regional'): return 2
+                if 'distant' in s: return 3
+                return 9
+            stage_num = series.map(_map_stage_any)
+
+    if stage_num is not None:
+        order = [c for c in [0,1,2,3,9] if c in set(stage_num.dropna().astype(int))]
+        stage_counts = stage_num.value_counts().reindex(order).fillna(0).astype(int)
         def _fmt_pct(p):
             return f'{p:.1f}%' if p >= 1 else ''
         ax1.pie(stage_counts.values, labels=[f'Stage {i}' for i in stage_counts.index], autopct=_fmt_pct, startangle=90, pctdistance=0.72, labeldistance=1.05, textprops={'fontsize': 9}, wedgeprops=dict(width=0.6))
@@ -638,10 +684,11 @@ def _plot_stage_surgery_gender_age(encoded_cod_df):
         ax1.axis('off')
 
     # 4-2. 병기별 생존율 (막대)
-    if stage_col in df.columns and 'Vital status recode (study cutoff used)__enc' in df.columns:
-        stage_survival = df.groupby(stage_col)['Vital status recode (study cutoff used)__enc'].agg(['count', lambda x: (x == 0).mean() * 100]).reset_index()
+    if stage_num is not None and 'Vital status recode (study cutoff used)__enc' in df.columns:
+        tmp = pd.DataFrame({'Stage': stage_num, 'vital': df['Vital status recode (study cutoff used)__enc']}).dropna()
+        tmp['Stage'] = pd.to_numeric(tmp['Stage'], errors='coerce').astype(int)
+        stage_survival = tmp.groupby('Stage')['vital'].agg(['count', lambda x: (x == 0).mean() * 100]).reset_index()
         stage_survival.columns = ['Stage', 'Count', 'Survival_Rate']
-        stage_survival['Stage'] = pd.to_numeric(stage_survival['Stage'], errors='coerce')
         stage_survival = stage_survival.sort_values('Stage')
         colors_stage = ['#FF6B6B' if rate < 70 else '#51CF66' if rate > 90 else '#FFD93D' for rate in stage_survival['Survival_Rate']]
         bars = ax2.bar(stage_survival['Stage'].astype(str), stage_survival['Survival_Rate'], color=colors_stage, alpha=0.8)
@@ -705,22 +752,28 @@ def _plot_key_corr_and_impacts(encoded_cod_df):
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 12))
     stage_col = 'Combined Summary Stage with Expanded Regional Codes (2004+)'
     def _map_stage_num(v):
-        if pd.isna(v): return 9
+        if pd.isna(v):
+            return 9
+        # 병기(Stage) 분류 규칙 요약
+        # - 확장 코드(0,1,2,3,4,5,6,7,9)를 기본 병기(0/1/2/3/9)로 접어 사용합니다.
+        #   0→0(In situ), 1→1(Localized), 2/3/4/5→2(Regional), 7→3(Distant), 6/9/그 외→9(Unknown)
+        # - 문자열 값의 경우에도 'in situ'/'localized'/'regional'/'distant' 키워드로 동일 규칙을 적용합니다.
+        exp_to_basic = {0:0, 1:1, 2:2, 3:2, 4:2, 5:2, 6:9, 7:3, 9:9}
         s = str(v).strip().lower()
+        # 숫자 확장코드 우선 처리
+        try:
+            iv = int(float(s))
+            return exp_to_basic.get(iv, 9)
+        except Exception:
+            ...
         if 'in situ' in s: return 0
         if s.startswith('localized'): return 1
         if s.startswith('regional'): return 2
         if 'distant' in s: return 3
-        try:
-            return int(float(v))
-        except Exception:
-            return 9
+        return 9
     series = df.get(stage_col)
     if series is not None:
-        try:
-            df['__stage_num__'] = pd.to_numeric(series, errors='coerce')
-        except Exception:
-            df['__stage_num__'] = series.map(_map_stage_num)
+        df['__stage_num__'] = series.map(_map_stage_num)
     else:
         df['__stage_num__'] = None
     # 상관행렬(히트맵)에서는 Stage 코드맵(__stage_num__)을 제외하여 가독성 향상
@@ -739,14 +792,15 @@ def _plot_key_corr_and_impacts(encoded_cod_df):
             val = corr.iloc[i, j]
             ax1.text(j, i, f'{val:.2f}', ha='center', va='center', color=('white' if abs(val) > 0.5 else 'black'), fontweight='bold', fontsize=8)
 
-    factors = ['Sex', 'Age recode with <1 year olds and 90+', 'Site recode ICD-O-3/WHO 2008', stage_col]
+    # 영향도 계산 시 병기는 정수 코드(__stage_num__) 기준으로 일치시키기
+    factors = ['Sex', 'Age recode with <1 year olds and 90+', 'Site recode ICD-O-3/WHO 2008', '__stage_num__']
     survival_impact = []
     factor_names = []
     for f in factors:
         if f in df.columns:
             s = df.groupby(f)['Vital status recode (study cutoff used)__enc'].agg(lambda x: (x == 0).mean() * 100)
             survival_impact.append((s.max() - s.min()))
-            factor_names.append(f.split()[0][:10])
+            factor_names.append('Stage' if f == '__stage_num__' else f.split()[0][:10])
     ax2.bar(range(len(survival_impact)), survival_impact, color=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'][:len(survival_impact)])
     ax2.set_title('변수별 생존율 영향도 (최대-최소 생존율 차이)', fontsize=12, fontweight='bold', pad=20)
     ax2.set_xlabel('변수'); ax2.set_ylabel('생존율 차이 (%포인트)')
@@ -922,12 +976,18 @@ def _plot_gender_age_event(encoded_cod_df):
     if 'Sex' in df_t.columns:
         counts = df_t.groupby(['Sex','target_label']).size().unstack(fill_value=0)
         tmp = counts.div(counts.sum(axis=1), axis=0).reset_index().melt(id_vars='Sex', var_name='target_label', value_name='pct')
+        # 성별 라벨 한글화(0/1, Female/Male 모두 대응)
+        sex_map = {0: '여성', 1: '남성', 'Female': '여성', 'Male': '남성'}
+        try:
+            tmp['Sex_kor'] = tmp['Sex'].map(lambda v: sex_map.get(v, v))
+        except Exception:
+            tmp['Sex_kor'] = tmp['Sex']
         # hue 순서 고정 및 라벨 한국어 매핑
         tmp['target_label'] = pd.to_numeric(tmp['target_label'], errors='coerce')
         desired_order = [-1, 0, 1, 2, 3]
         hue_order = [v for v in desired_order if v in set(tmp['target_label'].dropna().unique().astype(int))]
         tl_kor = {-1:'생존', 0:'암 관련 사망', 1:'합병증 관련 사망', 2:'기타 질환 사망', 3:'자살/자해'}
-        ax1 = sns.barplot(data=tmp, x='Sex', y='pct', hue='target_label', hue_order=hue_order, ax=ax1, palette='Set3')
+        ax1 = sns.barplot(data=tmp, x='Sex_kor', y='pct', hue='target_label', hue_order=hue_order, ax=ax1, palette='Set3')
         # 범례 라벨을 한글로 교체
         handles, labels = ax1.get_legend_handles_labels()
         try:
@@ -937,6 +997,7 @@ def _plot_gender_age_event(encoded_cod_df):
             labels_kor = labels
         leg = ax1.legend(handles, labels_kor, title='사망 클래스', bbox_to_anchor=(1.02, 1), loc='upper left')
         ax1.set_title('성별별 target_label 분포(%)', fontsize=12, fontweight='bold')
+        ax1.set_xlabel('성별')
         ax1.set_ylabel('%')
         # target_label 매핑 안내 박스(Stages 방식)
         mapping_lines = ['target_label 매핑'] + [f'{v}: {tl_kor[v]}' for v in desired_order if v in set(hue_order)]
@@ -998,17 +1059,45 @@ def _plot_yearly_event_and_classes(encoded_cod_df):
         return
     drop_cols = ['Vital status recode (study cutoff used)','Vital status recode (study cutoff used)__enc','Survival months flag','Survival months flag__enc','COD to site recode','COD to site recode__enc']
     df_t = encoded_cod_df.drop(columns=[c for c in drop_cols if c in encoded_cod_df.columns], errors='ignore').copy()
+    # 연도 코드 → 원본 연도 라벨 매핑 구성
+    def _build_year_map():
+        try:
+            enc_df, _ = _load_encoded_data(None)
+            if 'Patient ID' in enc_df.columns and 'Patient ID' in df_t.columns and 'Year of diagnosis' in enc_df.columns:
+                merged = df_t[['Patient ID', 'Year of diagnosis']].merge(
+                    enc_df[['Patient ID', 'Year of diagnosis']], on='Patient ID', suffixes=('_cod','_orig')
+                )
+                grp = merged.groupby('Year of diagnosis_cod')['Year of diagnosis_orig']
+                # 각 코드에 대한 최빈 원본 연도 사용
+                mp = grp.agg(lambda s: s.mode().iloc[0] if not s.mode().empty else s.iloc[0]).to_dict()
+                return mp
+        except Exception:
+            pass
+        # 폴백: 원본 데이터에서 최소 연도를 찾아 0→min_year 오프셋 적용
+        try:
+            enc_df, _ = _load_encoded_data(None)
+            if 'Year of diagnosis' in enc_df.columns:
+                min_y = pd.to_numeric(enc_df['Year of diagnosis'], errors='coerce').dropna().min()
+                uniq_codes = sorted(pd.to_numeric(df_t['Year of diagnosis'], errors='coerce').dropna().unique().astype(int).tolist())
+                return {c: int(min_y) + int(c) for c in uniq_codes}
+        except Exception:
+            pass
+        return {}
+
+    year_map = _build_year_map()
+    # 사건 확률 연도별
     year_df = df_t.groupby('Year of diagnosis')['target_label'].apply(lambda x: (x != -1).mean() * 100).reset_index(name='Event_Rate')
+    year_df['Year_label'] = year_df['Year of diagnosis'].map(year_map).fillna(year_df['Year of diagnosis']).astype(int)
     plt.figure(figsize=(7,4))
-    sns.lineplot(data=year_df, x='Year of diagnosis', y='Event_Rate', marker='o', linewidth=2, color='#3A86FF')
+    sns.lineplot(data=year_df, x='Year_label', y='Event_Rate', marker='o', linewidth=2, color='#3A86FF')
     plt.title('진단 연도별 사건 확률 추이 (P(target_label != -1))', fontsize=13, fontweight='bold')
     plt.xlabel('진단 연도'); plt.ylabel('확률(%)')
-    plt.xticks(rotation=45)
+    plt.xticks(sorted(year_df['Year_label'].unique()), rotation=45)
     plt.grid(True, alpha=0.3)
     try:
-        z = np.polyfit(pd.to_numeric(year_df['Year of diagnosis'], errors='coerce'), year_df['Event_Rate'], 1)
+        x = pd.to_numeric(year_df['Year_label'], errors='coerce')
+        z = np.polyfit(x, year_df['Event_Rate'], 1)
         p = np.poly1d(z)
-        x = pd.to_numeric(year_df['Year of diagnosis'], errors='coerce')
         plt.plot(x, p(x), '--', alpha=0.8, color='blue', linewidth=2)
     except Exception:
         ...
@@ -1020,17 +1109,19 @@ def _plot_yearly_event_and_classes(encoded_cod_df):
     d = df_t[(df_t['target_label'] != -1)][[year_col, 'target_label']].dropna().copy()
     if d.empty:
         return
-    years = sorted(d[year_col].dropna().unique().astype(int).tolist())
-    counts = d.groupby([year_col, 'target_label']).size().unstack(fill_value=0)
+    # 연도 코드 → 라벨로 변환하여 x축에 실제 연도 표시
+    d['Year_label'] = d[year_col].map(year_map).fillna(d[year_col]).astype(int)
+    years = sorted(d['Year_label'].dropna().unique().astype(int).tolist())
+    counts = d.groupby(['Year_label', 'target_label']).size().unstack(fill_value=0)
     keep = [c for c in [0,1,2,3] if c in counts.columns]
     counts = counts.reindex(columns=keep).reindex(index=years).fillna(0)
     perc = counts.div(counts.sum(axis=1), axis=0) * 100
-    long = perc.reset_index().melt(id_vars=year_col, var_name='class', value_name='pct')
+    long = perc.reset_index().melt(id_vars='Year_label', var_name='class', value_name='pct')
     class_kor = {0:'암 관련 사망', 1:'합병증 관련 사망', 2:'기타 질환 사망', 3:'자살/자해'}
     long['class_kor'] = long['class'].map(class_kor).astype(str)
     plt.figure(figsize=(10,5))
     palette = {'암 관련 사망':'#D62839','합병증 관련 사망':'#F4A261','기타 질환 사망':'#3A86FF','자살/자해':'#8338EC'}
-    sns.lineplot(data=long, x=year_col, y='pct', hue='class_kor', marker='o', palette=palette, linewidth=2.5, markersize=7)
+    sns.lineplot(data=long, x='Year_label', y='pct', hue='class_kor', marker='o', palette=palette, linewidth=2.5, markersize=7)
     plt.title('연도별 사망 클래스 구성비 변화', fontsize=13, fontweight='bold')
     plt.xlabel('진단 연도'); plt.ylabel('구성비(%)')
     plt.xticks(years, years, rotation=45)
