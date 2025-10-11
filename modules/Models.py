@@ -470,7 +470,6 @@ def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-8):
     loss = L_likelihood + alpha * L_rank
     return loss, L_likelihood.detach(), L_rank.detach()
 
-
 class WeightedCoxRiskEstimator(BaseEstimator, RegressorMixin):
     def __init__(self, num_events=4, lr=1e-2, epochs=100, weights=None, verbose=False, device='cpu'):
         self.num_events = num_events
@@ -569,7 +568,7 @@ def compute_risk_score_sigmoid(pmf, time_lambda=0.05, event_weights=None):
     risk_score_raw = weighted_pmf.sum(dim=(1, 2))
 
     # 0 기준으로 offset 제거 → 음수도 나오게
-    risk_score_raw = risk_score_raw - risk_score_raw.mean()
+    # risk_score_raw = risk_score_raw - risk_score_raw.mean()
 
     # 시그모이드 + 0~100 스케일
     risk_score = torch.sigmoid(risk_score_raw) * 100
