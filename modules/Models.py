@@ -18,6 +18,20 @@ import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
 import random
 
+def smooth_pmf_ema(pmf, alpha=0.3):
+    """
+    pmf: (B, E, T)
+    alpha: EMA smoothing 계수 (0 < alpha < 1)
+           alpha가 클수록 최근 값 반영 비중이 높음
+    """
+    B, E, T = pmf.shape
+    pmf_smooth = pmf.clone()
+
+    for t in range(1, T):
+        pmf_smooth[:, :, t] = alpha * pmf[:, :, t] + (1 - alpha) * pmf_smooth[:, :, t-1]
+
+    return pmf_smooth
+
 # 기본 DeepHit 모델
 class DeepHitSurv(nn.Module) :
 
@@ -65,23 +79,21 @@ class DeepHitSurv(nn.Module) :
 
 
 # SEBlock을 결합한 Deephit 모델
-class DeepHitSurvWithSEBlock(nn.Module) :
-    def __init__(self, input_dim, hidden_size=(128, 64), time_bins=91, num_events=4, dropout=0.2, se_ratio=0.25, cnn_kernel=3) :
+class DeepHitSurvWithSEBlock(nn.Module):
+    def __init__(self, input_dim, hidden_size=(128, 64), time_bins=91, num_events=4, dropout=0.2, se_ratio=0.25, alpha=0.3):
         """
-        
         input_dim : 특성의 개수
         hidden_size : hidden layer의 node 개수 (h1, h2)
         time_bins : 시간축을 나눌 개수 (출력의 개수)
         num_event : 각각 사건의 개수
         se_ratio : SEBlock에서 사용할 노드의 크기 비율
-
         """
         super().__init__()
         h1, h2 = hidden_size
         self.num_events = num_events
         self.T = time_bins
         self.input_dim = input_dim
-
+        self.smoothing_alpha = alpha
 
         # 모델 처음에 붙는 SEBlock : Feature weighting의 역할을 함
         se_hidden = max(1, int(input_dim * se_ratio))
@@ -92,9 +104,9 @@ class DeepHitSurvWithSEBlock(nn.Module) :
             nn.Sigmoid()
         )
 
-        # 각 branch에 붙는 SEBlock : 각 사건 마다 중요한 Feature를 Selection
+        # 각 branch에 붙는 SEBlock : 각 사건마다 중요한 Feature를 Selection
         se_hidden_shared = max(1, int(h2 * se_ratio))
-        self.se_block_event = nn.ModuleList([        
+        self.se_block_event = nn.ModuleList([
             nn.Sequential(
                 nn.Linear(h2, se_hidden_shared),
                 nn.ReLU(),
@@ -104,9 +116,9 @@ class DeepHitSurvWithSEBlock(nn.Module) :
         ])
 
         """
-        모델의 구조 : 
+        모델의 구조 :
         features -> SEBlock -> h1 -> h2
-        h2 + features -> 4개의 사건 heads -> SEBlock-> time bins
+        h2 + features -> 4개의 사건 heads -> SEBlock -> time bins
         """
         self.shared = nn.Sequential(
             nn.Linear(input_dim, h1),
@@ -115,50 +127,121 @@ class DeepHitSurvWithSEBlock(nn.Module) :
             nn.Linear(h1, h2),
             nn.ReLU(),
             nn.Dropout(dropout),
+            # nn.LayerNorm(h2),
         )
 
         self.heads = nn.ModuleList([
             nn.Linear(h2, time_bins) for _ in range(num_events)
         ])
 
+    def forward(self, x):
+        scale = self.se_block(x)        # SEBlock 수행
+        x_scaled = x * scale            # x를 스케일링
+
+        s = self.shared(x_scaled)       # 공유 브랜치 통과
+
+        logits_list = []
+        for k in range(self.num_events):
+            s_scaled = s * self.se_block_event[k](s)        # 각 브랜치에 대해 SEBlock 통과
+            logits_list.append(self.heads[k](s_scaled))     # 사건별 head 계산
+
+        logits = torch.stack(logits_list, dim=1)
+
+        pmf = F.softmax(logits, dim=-1)
+        pmf_smooth = smooth_pmf_ema(pmf, alpha=self.smoothing_alpha)
+        cif = torch.cumsum(pmf, dim=-1)
+
+        return logits, pmf_smooth, cif
+
+# SEBlock을 결합한 Deephit 모델
+class DeepHitSurvWithSEBlockCNN(nn.Module):
+    def __init__(self, input_dim, hidden_size=(128,64), time_bins=91, num_events=4, dropout=0.2, se_ratio=0.25, cnn_kernel=3):
+        super().__init__()
+        h1, h2 = hidden_size
+        self.num_events = num_events
+        self.T = time_bins
+        self.input_dim = input_dim
+
+        # Input SEBlock
+        se_hidden = max(1, int(input_dim*se_ratio))
+        self.se_block = nn.Sequential(
+            nn.Linear(input_dim, se_hidden),
+            nn.ReLU(),
+            nn.Linear(se_hidden, input_dim),
+            nn.Sigmoid()
+        )
+
+        # Branch SEBlock
+        se_hidden_shared = max(1, int(h2*se_ratio))
+        self.se_block_event = nn.ModuleList([
+            nn.Sequential(
+                nn.Linear(h2, se_hidden_shared),
+                nn.ReLU(),
+                nn.Linear(se_hidden_shared, h2),
+                nn.Sigmoid()
+            ) for _ in range(num_events)
+        ])
+
+        # Shared layers
+        self.shared = nn.Sequential(
+            nn.Linear(input_dim, h1),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(h1, h2),
+            nn.ReLU(),
+            nn.Dropout(dropout)
+        )
+
+        # Linear heads
+        self.heads = nn.ModuleList([
+            nn.Linear(h2, time_bins) for _ in range(num_events)
+        ])
+
         # 사건별 1D CNN (시간 축 smoothing)
         self.cnn_blocks = nn.ModuleList([
-            nn.Conv1d(in_channels=1, out_channels=1, kernel_size=cnn_kernel, padding=cnn_kernel//2)
+            nn.Conv1d(in_channels=time_bins, out_channels=time_bins, kernel_size=cnn_kernel, padding=cnn_kernel//2, groups=time_bins)
             for _ in range(num_events)
         ])
 
-    def forward(self, x) :
+    def forward(self, x):
+        # Input SEBlock
+        scale = self.se_block(x)
+        x_scaled = x * scale
 
-        scale = self.se_block(x)    # SEBlock 수행
-        x_scaled = x * scale        # x를 스케일링
-
-        s = self.shared(x_scaled)   # 공유 브랜치 통과
+        # Shared layers
+        s = self.shared(x_scaled)
 
         logits_list = []
         pmf_list = []
         cif_list = []
 
         for k in range(self.num_events):
-            # 사건별 SEBlock
+            # Branch SEBlock
             s_scaled = s * self.se_block_event[k](s)
 
             # Linear head
-            logits = self.heads[k](s_scaled)  # (B, time_bins)
+            logits = self.heads[k](s_scaled)  # (B, T)
 
-            # CNN 적용을 위해 shape 변경: (B, 1, time_bins)
-            logits_cnn = logits.unsqueeze(1)
-            logits_smooth = self.cnn_blocks[k](logits_cnn).squeeze(1)
+            # CNN 적용: 시간축만 smoothing, 채널 유지
+            # Conv1d expects (B, C, L), 여기서 C=time_bins, L=1? → groups=time_bins 사용
+            logits_cnn = logits.unsqueeze(2)  # (B, T, 1)
+            logits_smooth = self.cnn_blocks[k](logits_cnn)  # (B, T, 1)
+            logits_smooth = logits_smooth.squeeze(2)         # (B, T)
 
             # Softmax & CIF
-            pmf = F.softmax(logits_smooth, dim=-1)
-            cif = torch.cumsum(pmf, dim=-1)
+            pmf = F.softmax(logits_smooth, dim=-1)  # (B, T)
+            cif = torch.cumsum(pmf, dim=-1)         # (B, T)
 
             logits_list.append(logits_smooth)
             pmf_list.append(pmf)
             cif_list.append(cif)
 
-        return logits, pmf, cif
+        # 사건별 합치기 -> (B, K, T)
+        logits = torch.stack(logits_list, dim=1)
+        pmf = torch.stack(pmf_list, dim=1)
+        cif = torch.stack(cif_list, dim=1)
 
+        return logits, pmf, cif
 
 # Concat을 추가한 모델 구현
 class DeepHitSurvWithSEBlockConcat(nn.Module):
@@ -236,6 +319,92 @@ class DeepHitSurvWithSEBlockConcat(nn.Module):
         cif = torch.cumsum(pmf, dim=-1)
 
         return logits, pmf, cif
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+
+class DeepHitSurvWithSEBlockAnd2DCNN(nn.Module):
+    def __init__(self, input_dim, hidden_size=(128, 64),
+                 time_bins=91, num_events=4, dropout=0.2, se_ratio=0.25):
+        super().__init__()
+        h1, h2 = hidden_size
+        self.num_events = num_events
+        self.T = time_bins
+        self.input_dim = input_dim
+
+        # ----- [1] 입력 feature weighting용 SEBlock -----
+        se_hidden = max(1, int(input_dim * se_ratio))
+        self.se_block = nn.Sequential(
+            nn.Linear(input_dim, se_hidden),
+            nn.ReLU(),
+            nn.Linear(se_hidden, input_dim),
+            nn.Sigmoid()
+        )
+
+        # ----- [2] 사건별 feature weighting용 SEBlock -----
+        se_hidden_shared = max(1, int(h2 * se_ratio))
+        self.se_block_event = nn.ModuleList([
+            nn.Sequential(
+                nn.Linear(h2, se_hidden_shared),
+                nn.ReLU(),
+                nn.Linear(se_hidden_shared, h2),
+                nn.Sigmoid()
+            ) for _ in range(num_events)
+        ])
+
+        # ----- [3] 공유층 -----
+        self.shared = nn.Sequential(
+            nn.Linear(input_dim, h1),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(h1, h2),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+        )
+
+        # ----- [4] 사건별 head (각각 time_bins 출력) -----
+        self.heads = nn.ModuleList([
+            nn.Linear(h2, time_bins) for _ in range(num_events)
+        ])
+
+        # ----- [5] 2D CNN block (시간/사건 상관관계 학습) -----
+        self.conv2d_block = nn.Sequential(
+            nn.Conv2d(1, 8, kernel_size=(2, 5), padding=(1, 2)),  # 사건×시간 local pattern
+            nn.ReLU(),
+            nn.Conv2d(8, 16, kernel_size=(2, 3), padding=(0, 1)),
+            nn.ReLU(),
+            nn.Conv2d(16, 1, kernel_size=1),  # 다시 channel=1로 축소
+        )
+
+    def forward(self, x):
+        # ----- [1] 입력 SEBlock -----
+        scale = self.se_block(x)
+        x_scaled = x * scale
+
+        # ----- [2] shared representation -----
+        s = self.shared(x_scaled)
+
+        # ----- [3] 사건별 branch -----
+        logits_list = []
+        for k in range(self.num_events):
+            s_scaled = s * self.se_block_event[k](s)
+            logits_list.append(self.heads[k](s_scaled))
+
+        # ----- [4] stack하여 (B, 4, 91) 만들기 -----
+        logits = torch.stack(logits_list, dim=1)  # (B, num_events, time_bins)
+
+        # ----- [5] 2D CNN 적용 -----
+        # Conv2d 입력 형태로 reshape: (B, 1, 4, 91)
+        x_cnn = logits.unsqueeze(1)
+        logits_refined = self.conv2d_block(x_cnn).squeeze(1)  # (B, 4, 91)
+
+        # ----- [6] softmax + cumsum -----
+        pmf = F.softmax(logits_refined, dim=-1)
+        cif = torch.cumsum(pmf, dim=-1)
+
+        return logits_refined, pmf, cif
 
 
 def deephit_loss(pmf, cif, times, events, alpha=0.5, margin=0.05, eps=1e-8):

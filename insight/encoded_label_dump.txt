@@ -1,0 +1,95 @@
+[COD to site recode]
+0 -> Alive
+1 -> Intrahepatic Bile Duct
+2 -> Lung and Bronchus
+3 -> Miscellaneous Malignant Cancer
+4 -> Other Cause of Death
+5 -> Colon excluding Rectum
+6 -> Diseases of Heart
+7 -> Alzheimers (ICD-9 and 10 only)
+8 -> Stomach
+9 -> Nephritis, Nephrotic Syndrome and Nephrosis
+10 -> Cerebrovascular Diseases
+11 -> Liver
+12 -> Breast
+13 -> Chronic Obstructive Pulmonary Disease and Allied Cond
+14 -> Chronic Lymphocytic Leukemia
+15 -> Chronic Liver Disease and Cirrhosis
+16 -> Salivary Gland
+17 -> Other Infectious and Parasitic Diseases including HIV
+18 -> Prostate
+19 -> Non-Hodgkin Lymphoma
+20 -> Diabetes Mellitus
+21 -> State DC not available or state DC available but no COD
+22 -> Kidney and Renal Pelvis
+23 -> Hypertension without Heart Disease
+24 -> Myeloma
+25 -> Acute Myeloid Leukemia
+26 -> Brain and Other Nervous System
+27 -> Pneumonia and Influenza
+28 -> Pancreas
+29 -> Stomach and Duodenal Ulcers
+30 -> Small Intestine
+31 -> Accidents and Adverse Effects
+32 -> Corpus Uteri
+33 -> Urinary Bladder
+34 -> In situ, benign or unknown behavior neoplasm
+35 -> Atherosclerosis
+36 -> Esophagus
+37 -> Cervix Uteri
+38 -> Suicide and Self-Inflicted Injury
+39 -> Anus, Anal Canal and Anorectum
+40 -> Melanoma of the Skin
+41 -> Rectum and Rectosigmoid Junction
+42 -> Uterus, NOS
+43 -> Soft Tissue including Heart
+44 -> Non-Melanoma Skin
+45 -> Tongue
+46 -> Septicemia
+47 -> Thyroid
+48 -> Floor of Mouth
+49 -> Aleukemic, Subleukemic and NOS
+50 -> Other Diseases of Arteries, Arterioles, Capillaries
+51 -> Aortic Aneurysm and Dissection
+52 -> Pleura
+53 -> Ovary
+54 -> Other Biliary
+55 -> Congenital Anomalies
+56 -> Hypopharynx
+57 -> Other Lymphocytic Leukemia
+58 -> Nasopharynx
+59 -> Penis
+60 -> Other Digestive Organs
+61 -> Bones and Joints
+62 -> Tonsil
+63 -> Peritoneum, Omentum and Mesentery
+64 -> Larynx
+65 -> Hodgkin Lymphoma
+66 -> Retroperitoneum
+67 -> Other Myeloid/Monocytic Leukemia
+68 -> Tuberculosis
+69 -> Symptoms, Signs and Ill-Defined Conditions
+70 -> Oropharynx
+71 -> Vagina
+72 -> Gallbladder
+73 -> Gum and Other Mouth
+74 -> Other Endocrine including Thymus
+75 -> Homicide and Legal Intervention
+76 -> Trachea, Mediastinum and Other Respiratory Organs
+77 -> Testis
+78 -> Acute Lymphocytic Leukemia
+79 -> Other Urinary Organs
+80 -> Other Oral Cavity and Pharynx
+81 -> Other Female Genital Organs
+82 -> Nose, Nasal Cavity and Middle Ear
+83 -> Other Acute Leukemia
+84 -> Ureter
+85 -> Vulva
+86 -> Chronic Myeloid Leukemia
+87 -> Eye and Orbit
+88 -> Lip
+89 -> Complications of Pregnancy, Childbirth, Puerperium
+
+[Vital status recode (study cutoff used)]
+0 -> Alive
+1 -> Dead
