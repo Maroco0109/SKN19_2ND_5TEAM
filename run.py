@@ -30,8 +30,34 @@ num_events = 4                      # 사건의 개수
 input_params_path = "./parameters/deephit_model_feature.pth"
 device = torch.device("cpu")
 
-categories = DataPreprocessing.load_category()
-dp = DataPreprocessing(categories=categories)
+encoding_map = DataPreprocessing.load_category()
+print(type(encoding_map))
+
+def clean_encoding_map(encoding_map, convert_values_to_str=True):
+    cleaned_map = {}
+    for col, mapping in encoding_map.items():
+        # mapping이 dict인지 확인
+        if not isinstance(mapping, dict):
+            print(f"Warning: '{col}'의 mapping이 dict가 아니어서 건너뜀")
+            continue
+        
+        new_mapping = {}
+        for k, v in mapping.items():
+            # np.int64, np.float64 등 제거
+            if hasattr(k, "item"):
+                k = k.item()
+            if convert_values_to_str:
+                v = str(v)
+            elif hasattr(v, "item"):
+                v = v.item()
+            new_mapping[k] = v
+        cleaned_map[col] = new_mapping
+    return cleaned_map
+
+# 예시: 모든 값도 문자열로 변환하려면 convert_values_to_str=True
+str_encoding_map = clean_encoding_map(encoding_map, convert_values_to_str=True)
+
+dp = DataPreprocessing(categories=str_encoding_map)
 
 # 모델 정의 (학습할 때 사용한 모델 클래스)
 model = Models.DeepHitSurvWithSEBlock(input_dim, 
@@ -39,7 +65,7 @@ model = Models.DeepHitSurvWithSEBlock(input_dim,
                     time_bins, 
                     num_events,
                     )  # 사건 수 맞게 설정
-model.load_state_dict(torch.load(input_params_path, map_location=device))
+model.load_state_dict(torch.load(input_params_path, map_location=device, weights_only=True))
 model.to(device)
 model.eval()  # 평가 모드
 
@@ -79,16 +105,22 @@ for col in df.columns:
 sui_input_file_path = ['./data/Suicide.csv']
 sui_df = pd.read_csv(sui_input_file_path[0])
 cols = sui_df.columns.tolist()
+dtypes = sui_df.dtypes.to_dict()  # {col_name: dtype, ...}
 
 # 예측 버튼
 if st.button("예측 실행"):
     
-    input_df = pd.DataFrame([{col: 0 for col in cols}])
+    # 기존 데이터셋 첫 행을 기반으로 input_df 생성
+    input_df = sui_df.iloc[[0]].copy()  # 첫 행 복사, dtype 그대로 유지
 
-    # selected_values = {'Age': 65, 'Gender': 'Male', ...}
     for col, val in selected_values.items():
-        if col in input_df.columns:
-            input_df.at[0, col] = val  # 0행(col 위치)에 값 덮어쓰기
+        if col in input_df.columns and val is not None:
+            input_df.at[0, col] = str(val)  # 무조건 str로 변환
+
+    # 5️⃣ 카테고리 인코딩
+    input_df_encoded = dp.run(input_df)
+
+    print(input_df_encoded)
 
     # 예측 실행
     result_df = ModelAnalysis.predict_event_probabilities(
@@ -97,6 +129,8 @@ if st.button("예측 실행"):
         model=model,
         device=device
     )
+
+    st.dataframe(result_df)
 
     ModelAnalysis.visualize_single_prediction(
         input_df=input_df,

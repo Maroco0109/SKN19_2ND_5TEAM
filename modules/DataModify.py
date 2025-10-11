@@ -504,3 +504,31 @@ def load_data(file_paths) :
     combined_df = pd.concat(df_list, ignore_index=True)
     return combined_df
 
+def decode_csv_features(csv_path, categories):
+    """
+    CSV에 저장된 인코딩된 feature 데이터를 categories 딕셔너리로 디코딩
+
+    Args:
+        csv_path (str): 인코딩된 CSV 파일 경로
+        categories (dict): DataPreprocessing.categories 딕셔너리
+
+    Returns:
+        pd.DataFrame: 디코딩된 feature 데이터
+    """
+    # CSV 불러오기
+    df_encoded = pd.read_csv(csv_path)
+
+    # 디코딩할 컬럼 이름 순서
+    feature_cols = [col for col in df_encoded.columns if col != 'encoding_type']
+
+    df_decoded = pd.DataFrame(columns=feature_cols)
+
+    for col in feature_cols:
+        if col in categories:
+            inverse_map = {v: k for k, v in categories[col].items()}
+            df_decoded[col] = df_encoded[col].apply(lambda x: inverse_map.get(int(x), x))
+        else:
+            # 숫자형 컬럼이면 그대로 사용
+            df_decoded[col] = df_encoded[col]
+
+    return df_decoded

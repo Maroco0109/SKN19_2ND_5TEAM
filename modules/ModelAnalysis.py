@@ -196,6 +196,33 @@ def compute_survival_metrics(pmf: torch.Tensor):
         'expected_time': expected_time
     }
 
+def encode_selected_values(input_df: pd.DataFrame, selected_values: dict, categories: dict) -> pd.DataFrame:
+    df_encoded = input_df.copy()
+
+    for col, val in selected_values.items():
+        if val is None:
+            df_encoded.at[0, col] = np.nan  # None이면 NaN
+            continue
+        
+        if col in df_encoded.columns and col in categories:
+            mapping = categories[col]
+            
+            # categories key 중 첫 번째 key의 타입 가져오기
+            sample_key = next(iter(mapping))
+            key_type = type(sample_key)
+            
+            try:
+                typed_val = key_type(val)
+            except Exception:
+                raise ValueError(f"{col}: '{val}'을(를) {key_type}로 변환할 수 없습니다.")
+            
+            df_encoded.at[0, col] = mapping.get(typed_val, np.nan)  # 없으면 NaN
+        else:
+            df_encoded.at[0, col] = val  # 숫자/문자 그대로
+
+    return df_encoded
+
+
 # 예시
 def show_model_graph(model, x, y, e, cols) :
     pass

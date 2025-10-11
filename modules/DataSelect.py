@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import torch
+import pickle
 
 """
 
@@ -100,9 +100,10 @@ class DataPreprocessing() :
         ]
     
     def __init__(self, drop_cols=None, label_cols=None, categories=None) :
+        self.categories = {}    # 카테고리의 인코딩을 저장
         if categories is not None :
             self.categories = categories
-        self.categories = {}    # 카테고리의 인코딩을 저장
+
 
         ###--- 드랍하기로 한 컬럼명을 작성
         self.drop_cols = ['Patient ID','Year of follow-up recode','Site recode ICD-O-3/WHO 2008','Number of Cores Positive Recode (2010+)',
@@ -120,14 +121,17 @@ class DataPreprocessing() :
         self.drop_cols = cols
 
     # categories 저장
-    def save_category(self, file_path='./parameters/categories.pt'):
-        torch.save(self.categories, file_path)
+    def save_category(self, file_path='./parameters/categories.pkl'):
+        with open(file_path, 'wb') as f:
+            pickle.dump(self.categories, f, protocol=pickle.HIGHEST_PROTOCOL)
     
-    # categories 로드
+    # categories 로드 (pickle 사용)
     @staticmethod
-    def load_category(file_path='./parameters/categories.pt'):
+    def load_category(file_path='./parameters/categories.pkl'):
         try:
-            return torch.load(file_path)
+            with open(file_path, 'rb') as f:
+                categories = pickle.load(f)
+            return categories
         except FileNotFoundError:
             return {}
 
