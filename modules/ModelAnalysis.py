@@ -9,8 +9,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import streamlit as st
 
 import torch
+
+from modules.Models import compute_risk_score_sigmoid
 
 def predict_event_probabilities(
     input_df: pd.DataFrame,
@@ -34,31 +37,20 @@ def predict_event_probabilities(
     Returns:
         pd.DataFrame: 사건별 × 시간별 CIF (마지막 시간 bin 제거)
     """
-    # -----------------------------
-    # 1️⃣ 전처리
+
     processed_df = dp.run(input_df)
 
-    # -----------------------------
-    # 2️⃣ feature만 추출
     drop_cols = [col for col in [time_column, target_column] if col in processed_df.columns]
     features_df = processed_df.drop(columns=drop_cols)
 
-    # -----------------------------
-    # 3️⃣ torch.tensor 변환
     x = torch.tensor(features_df.values.astype(float), dtype=torch.float32).to(device)
 
-    # -----------------------------
-    # 4️⃣ 모델 예측
     model.eval()
     with torch.no_grad():
         _, pmf, cif = model(x)  # cif: (1, num_events, time_bins)
 
-    # -----------------------------
-    # 5️⃣ 마지막 시간 bin 제거 (dummy)
     cif = cif[:, :, :-1]  # shape: (1, num_events, time_bins-1)
 
-    # -----------------------------
-    # 6️⃣ 사건별 × 시간별 DataFrame 생성
     num_events, num_time = cif.shape[1], cif.shape[2]
     cif_array = cif[0].cpu().numpy()  # (num_events, time_bins-1)
 
@@ -71,6 +63,78 @@ def predict_event_probabilities(
     result_df = pd.DataFrame(cif_array.flatten()[None, :], columns=columns)
 
     return result_df
+
+def visualize_single_prediction(input_df, dp, model, device,
+                                time_column='Survival months_bin_3m',
+                                target_column='target_label',
+                                event_weights=None,
+                                time_lambda=0.05):
+    """
+    단일 입력 데이터(1행 DataFrame)에 대해 PMF와 CIF를 시각화
+    마지막 시간 bin(dummy)은 제거됨
+    """
+
+    processed_df = dp.run(input_df)
+
+    drop_cols = [col for col in [time_column, target_column] if col in processed_df.columns]
+    features_df = processed_df.drop(columns=drop_cols)
+
+    x = torch.tensor(features_df.values.astype(float), dtype=torch.float32).to(device)
+
+    model.eval()
+    with torch.no_grad():
+        _, pmf, cif = model(x)  # (1, num_events, time_bins)
+
+    pmf = pmf[:, :, :-1]
+    cif = cif[:, :, :-1]
+    _, num_events, time_bins = cif.shape
+    time_points = list(range(time_bins))
+
+    fig_pmf, ax_pmf = plt.subplots(figsize=(8, 4))
+    for k in range(num_events):
+        ax_pmf.plot(time_points, pmf[0, k].cpu().numpy().flatten(), label=f'Event {k+1}')
+    ax_pmf.set_xlabel('Time bins')
+    ax_pmf.set_ylabel('Probability (PMF)')
+    ax_pmf.set_title('PMF (Probability Mass Function)')
+    ax_pmf.legend()
+    ax_pmf.grid(True)
+    ax_pmf.set_xlim(0, time_bins - 1)
+    ax_pmf.set_ylim(0, 1)
+    st.pyplot(fig_pmf)
+
+    fig_cif, ax_cif = plt.subplots(figsize=(8, 4))
+    for k in range(num_events):
+        ax_cif.plot(time_points, cif[0, k].cpu().numpy().flatten(), label=f'Event {k+1}')
+    ax_cif.set_xlabel('Time bins')
+    ax_cif.set_ylabel('Cumulative Probability (CIF)')
+    ax_cif.set_title('CIF (Cumulative Incidence Function)')
+    ax_cif.legend()
+    ax_cif.grid(True)
+    ax_cif.set_xlim(0, time_bins - 1)
+    ax_cif.set_ylim(0, 1)
+    st.pyplot(fig_cif)
+
+    pmf_np = pmf[0].cpu().numpy()  # (num_events, time_bins)
+    survival_probs = []
+    surv = 1.0
+
+    for t in range(time_bins):
+        surv *= (1 - np.sum(pmf_np[:, t]))  # 모든 사건이 발생하지 않을 확률
+        survival_probs.append(surv)
+
+    fig_surv, ax_surv = plt.subplots(figsize=(8, 4))
+    ax_surv.plot(time_points, survival_probs, color='black', linewidth=2)
+    ax_surv.set_xlabel('Time bins')
+    ax_surv.set_ylabel('Survival Probability S(t)')
+    ax_surv.set_title('Survival Curve (No Event Occurrence Probability)')
+    ax_surv.grid(True)
+    ax_surv.set_xlim(0, time_bins - 1)
+    ax_surv.set_ylim(0, 1)
+    st.pyplot(fig_surv)
+
+    risk_score = compute_risk_score_sigmoid(pmf, time_lambda=time_lambda, event_weights=event_weights)
+    st.subheader("⚠️ 위험 점수 (Risk Score)")
+    st.write(f"{risk_score.item():.2f} / 100")
 
 def dataset_to_dataframe(ds):
     data_list = []
@@ -131,6 +195,32 @@ def compute_survival_metrics(pmf: torch.Tensor):
         'risk_score': risk_score,
         'expected_time': expected_time
     }
+
+def encode_selected_values(input_df: pd.DataFrame, selected_values: dict, categories: dict) -> pd.DataFrame:
+    df_encoded = input_df.copy()
+
+    for col, val in selected_values.items():
+        if val is None:
+            df_encoded.at[0, col] = np.nan  # None이면 NaN
+            continue
+        
+        if col in df_encoded.columns and col in categories:
+            mapping = categories[col]
+            
+            # categories key 중 첫 번째 key의 타입 가져오기
+            sample_key = next(iter(mapping))
+            key_type = type(sample_key)
+            
+            try:
+                typed_val = key_type(val)
+            except Exception:
+                raise ValueError(f"{col}: '{val}'을(를) {key_type}로 변환할 수 없습니다.")
+            
+            df_encoded.at[0, col] = mapping.get(typed_val, np.nan)  # 없으면 NaN
+        else:
+            df_encoded.at[0, col] = val  # 숫자/문자 그대로
+
+    return df_encoded
 
 
 # 예시
