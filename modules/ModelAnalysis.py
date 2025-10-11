@@ -12,6 +12,65 @@ import seaborn as sns
 
 import torch
 
+def predict_event_probabilities(
+    input_df: pd.DataFrame,
+    dp,
+    model,
+    device: torch.device,
+    time_column: str = 'Survival months_bin_3m',
+    target_column: str = 'target_label'
+) -> pd.DataFrame:
+    """
+    1행 입력 데이터를 받아 전처리 후, 모델로 CIF 전체 예측 (마지막 시간 bin 제거)
+    
+    Args:
+        input_df: 1행짜리 DataFrame
+        dp: DataPreprocessing 인스턴스
+        model: 학습된 PyTorch 모델
+        device: 'cpu' 또는 'cuda'
+        time_column: 시간 컬럼명
+        target_column: 타겟 컬럼명
+    
+    Returns:
+        pd.DataFrame: 사건별 × 시간별 CIF (마지막 시간 bin 제거)
+    """
+    # -----------------------------
+    # 1️⃣ 전처리
+    processed_df = dp.run(input_df)
+
+    # -----------------------------
+    # 2️⃣ feature만 추출
+    drop_cols = [col for col in [time_column, target_column] if col in processed_df.columns]
+    features_df = processed_df.drop(columns=drop_cols)
+
+    # -----------------------------
+    # 3️⃣ torch.tensor 변환
+    x = torch.tensor(features_df.values.astype(float), dtype=torch.float32).to(device)
+
+    # -----------------------------
+    # 4️⃣ 모델 예측
+    model.eval()
+    with torch.no_grad():
+        _, pmf, cif = model(x)  # cif: (1, num_events, time_bins)
+
+    # -----------------------------
+    # 5️⃣ 마지막 시간 bin 제거 (dummy)
+    cif = cif[:, :, :-1]  # shape: (1, num_events, time_bins-1)
+
+    # -----------------------------
+    # 6️⃣ 사건별 × 시간별 DataFrame 생성
+    num_events, num_time = cif.shape[1], cif.shape[2]
+    cif_array = cif[0].cpu().numpy()  # (num_events, time_bins-1)
+
+    time_points = [f"Time_{t}" for t in range(num_time)]
+    columns = pd.MultiIndex.from_product(
+        [[f"Event_{i}" for i in range(num_events)], time_points],
+        names=['Event', 'Time']
+    )
+
+    result_df = pd.DataFrame(cif_array.flatten()[None, :], columns=columns)
+
+    return result_df
 
 def dataset_to_dataframe(ds):
     data_list = []
@@ -72,6 +131,7 @@ def compute_survival_metrics(pmf: torch.Tensor):
         'risk_score': risk_score,
         'expected_time': expected_time
     }
+
 
 # 예시
 def show_model_graph(model, x, y, e, cols) :

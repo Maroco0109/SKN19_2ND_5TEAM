@@ -449,8 +449,3 @@ def load_data(file_paths) :
     combined_df = pd.concat(df_list, ignore_index=True)
     return combined_df
 
-def split_data_X_y(df) :        # 데이터를 특성, 라벨(시간, 사건)으로 분리
-    pass
-
-def split_data_X_y_e(df) :      # 데이터를 특성, 시간, 사건으로 분리
-    pass

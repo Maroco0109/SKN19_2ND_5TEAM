@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import torch
 
 """
 
@@ -21,159 +22,7 @@ import pandas as pd
 
 
 """
-
-class DataPreprocessing2:
-    def __init__(self, drop_cols=None, label_cols=None, boundary=100):
-        # 인코딩 사전
-        self.categories = {}            # {col: {category_value: integer_label(>=1)}}
-        self.categories_meta = {        # 메타
-            'encoding_type': 'label',
-            'nan_label': 0,
-            'starts_from': 1,
-            'boundary': boundary
-        }
-        # 드랍/라벨 컬럼
-        self.drop_cols = drop_cols or []
-        self.label_cols = label_cols or []   # 라벨 생성에 사용할 컬럼(인코딩 제외)
-        self.fitted_cols = set()
-        self._is_fitted = False
-
-    # ---------------- 공용 사전 저장/불러오기 ----------------
-    def save_categories(self, path):
-        payload = {'meta': self.categories_meta, 'maps': self.categories}
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(payload, f, ensure_ascii=False)
-
-    def load_categories(self, path):
-        with open(path, 'r', encoding='utf-8') as f:
-            payload = json.load(f)
-        self.categories_meta = payload['meta']
-        self.categories = {k: {self._try_num(vk): vv for vk, vv in v.items()} for k, v in payload['maps'].items()}
-        self._is_fitted = True
-        self.fitted_cols = set(self.categories.keys())
-
-    @staticmethod
-    def _try_num(x):
-        # 저장/로드 시 숫자 문자열을 원복
-        try:
-            return int(x)
-        except Exception:
-            return x
-
-    # ---------------- 사전 학습 (세 데이터 유니온으로 한 번만) ----------------
-    def fit(self, dfs):
-        """
-        dfs: 리스트 [df1, df2, df3] 처럼 여러 DataFrame
-        """
-        # 유니온 DF의 카테고리 값 수집
-        union_examples = {}
-        for df in dfs:
-            # 드랍 먼저
-            tmp = self.drop_data(df)
-            # 카테고리 컬럼만 후보
-            cats = return_cols(tmp, 'categorical', boundary=self.categories_meta['boundary'])
-            cats = [c for c in cats if c not in self.label_cols]
-            for col in cats:
-                vals = tmp[col].dropna().unique().tolist()
-                union_examples.setdefault(col, set()).update(vals)
-
-        # 각 컬럼별로 1부터 라벨 부여 (NaN은 0)
-        for col, vals in union_examples.items():
-            # 문자열/숫자 섞여 있을 수 있으니 문자열 캐스팅 기반 정렬 안정화
-            # (동일한 입력이면 항상 동일한 순서를 보장)
-            sorted_vals = sorted(vals, key=lambda x: (str(type(x)), str(x)))
-            start = self.categories_meta['starts_from']  # 1
-            self.categories[col] = {val: i for i, val in enumerate(sorted_vals, start=start)}
-
-        self.fitted_cols = set(self.categories.keys())
-        self._is_fitted = True
-        return self
-
-    # ---------------- 드랍 ----------------
-    def set_drop_cols(self, cols):
-        self.drop_cols = cols
-
-    def drop_data(self, df):
-        to_drop = [c for c in self.drop_cols if c in df.columns]
-        return df.drop(columns=to_drop)
-
-    # ---------------- 카테고리 인코딩 (transform 전용) ----------------
-    def category_encoding(self, df):
-        """
-        self.categories(고정 사전)를 사용해 변환.
-        NaN -> 0, 사전에 없는 미지 값 -> 새 라벨 부여 X (경고용 -1) 또는 0 중 택1.
-        여기서는 일관성 보장을 위해 **미지 값은 -1**로 표기(원하면 0으로 바꿔도 됨).
-        """
-        if not self._is_fitted:
-            raise RuntimeError("category_encoding 전에 fit()을 먼저 호출해 전체 사전을 만들어주세요.")
-
-        df_encoded = df.copy()
-        nan_label = self.categories_meta['nan_label']
-
-        # 후보 컬럼
-        cats = return_cols(df_encoded, 'categorical', boundary=self.categories_meta['boundary'])
-        cats = [c for c in cats if c not in self.label_cols]
-
-        for col in cats:
-            if col not in self.categories:
-                # fit 시점에 카테고리가 아니었거나 새로 생긴 컬럼 → 그대로 두거나 숫자면 패스
-                continue
-
-            label_map = self.categories[col]
-            # 매핑
-            enc = df_encoded[col].map(label_map)
-            # NaN 값(원래 NaN이거나 매핑 실패) 처리
-            # 원래 NaN -> 0, 매핑 실패(새로운 값) -> -1
-            is_null_original = df_encoded[col].isna()
-            enc = enc.astype('Float64')  # NA를 보존하는 타입
-            # 매핑 실패 위치: enc.isna() & ~is_null_original
-            unknown_mask = enc.isna() & (~is_null_original)
-
-            # 채우기
-            enc = enc.fillna(nan_label)  # 우선 전부 0으로
-            enc[unknown_mask] = -1       # 미지 카테고리는 -1로 표시 (일관성 강제)
-
-            df_encoded[col] = enc.astype('int64')
-
-        return df_encoded
-
-    # ---------------- 디코딩 ----------------
-    def category_decoding(self, df_encoded):
-        if self.categories_meta.get('encoding_type') != 'label':
-            raise ValueError("self.categories가 'label' 인코딩 정보를 포함하지 않습니다.")
-        df_decoded = df_encoded.copy()
-        for col, mapping in self.categories.items():
-            if col not in df_decoded.columns:
-                continue
-            inv = {v: k for k, v in mapping.items()}
-            # 0(NaN), -1(미지)은 복원 불가 → 그대로 둠
-            df_decoded[col] = df_decoded[col].map(inv).where(~df_decoded[col].isin([0, -1]), other=np.nan)
-        return df_decoded
-
-    # ---------------- 라벨/시간 생성(골격 유지) ----------------
-    def label_data_encoding(self, df):
-        """
-        TODO:
-        - label_Surv_flags 규칙으로 drop/keep
-        - COD to site recode 기준으로 사건별 타깃 라벨(-1,0,1,2,3) 생성 -> 'target_label'
-        - 'Survival months'를 3개월 단위로 binning -> 'Survival months_bin_3m'
-        - 사용한 원천 컬럼 drop
-        """
-        df_label = df.copy()
-        # ---- 여기서 구현 ----
-        return df_label
-
-    # ---------------- 파이프라인 ----------------
-    def transform(self, df):
-        df_cleaned = self.drop_data(df)
-        df_cleaned = self.category_encoding(df_cleaned)
-        df_cleaned = self.label_data_encoding(df_cleaned)
-        return df_cleaned
-
-    def run(self, df):
-        # run은 transform 별칭 (호출 습관 유지용)
-        return self.transform(df)
-    
+# 모델 학습용 데이터 인코딩 
 class DataPreprocessing() :
     # 라벨을 구성하기 위한 사인별 카테고리 설정 -> COD to site recode
     label_cod_list = [
@@ -250,7 +99,9 @@ class DataPreprocessing() :
             ]
         ]
     
-    def __init__(self, drop_cols=None, label_cols=None) :
+    def __init__(self, drop_cols=None, label_cols=None, categories=None) :
+        if categories is not None :
+            self.categories = categories
         self.categories = {}    # 카테고리의 인코딩을 저장
 
         ###--- 드랍하기로 한 컬럼명을 작성
@@ -267,6 +118,19 @@ class DataPreprocessing() :
     # 드랍할 컬럼을 설정
     def set_drop_cols(self, cols):
         self.drop_cols = cols
+
+    # categories 저장
+    def save_category(self, file_path='./parameters/categories.pt'):
+        torch.save(self.categories, file_path)
+    
+    # categories 로드
+    @staticmethod
+    def load_category(file_path='./parameters/categories.pt'):
+        try:
+            return torch.load(file_path)
+        except FileNotFoundError:
+            return {}
+
 
     # 데이터 드랍
     def drop_data(self, df) :
@@ -403,7 +267,6 @@ class DataPreprocessing() :
         df_cleaned = self.label_data_encoding(df_cleaned)
 
         return df_cleaned
-
 
 # 라벨을 구성하기 위한 사인별 카테고리 설정 -> COD to site recode
 label_cod_list = [
