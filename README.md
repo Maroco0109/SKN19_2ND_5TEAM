@@ -49,6 +49,8 @@
   
   
 </table>
+
+
 ---
 
 ## 2. **프로젝트 개요**
@@ -82,31 +84,22 @@
 ```
 TEAMPROJECT/
 └─ SKN19_2ND_5TEAM/
-   ├─ .vscode/
-   │  └─ settings.json
-   │
    ├─ data/
-   │  ├─ EDA/
-   │  │  ├─ encoded_dataset_COD.csv
-   │  │  └─ parameters/
-   │  │     ├─ deephit_model_feature_2dcnn.pth
-   │  │     ├─ deephit_model_feature_100time.pth
-   │  │     ├─ deephit_model_feature_cnn.pth
-   │  │     ├─ deephit_model_feature_concat.pth
-   │  │     ├─ deephit_model_feature_SE.pth
-   │  │     ├─ deephit_model_without_feature_concat.pth
-   │  │     └─ risk_model_event_linears.pth
+   │  ├─ parameters/
+   │  │   ├─ deephit_model_feature_2dcnn.pth
+   │  │   ├─ deephit_model_feature_100time.pth
+   │  │   ├─ deephit_model_feature_cnn.pth
+   │  │   ├─ deephit_model_feature_concat.pth
+   │  │   ├─ deephit_model_feature_SE.pth
+   │  │   └─ deephit_model_without_feature_concat.pth
    │  │
    │  ├─ 2022Data_part1.csv
    │  ├─ 2022Data_part2.csv
-   │  ├─ cancer_self.csv
    │  ├─ categories_select.csv
    │  ├─ encoded_dataset_COD.csv
    │  ├─ encoded_dataset.csv
-   │  ├─ SEER_Lung.csv
    │  ├─ Suicide_encode.csv
    │  ├─ Suicide.csv
-   │  ├─ Suicide2010-2021.csv
    │  └─ test dataset.csv
    │
    ├─ insight/
@@ -129,12 +122,10 @@ TEAMPROJECT/
    │
    ├─ parameters/
    │  ├─ categories.pkl
-   │  ├─ categories.pt
    │  └─ deephit_model_feature.pth
    │
    ├─ .gitignore
    ├─ Analysis.ipynb
-   ├─ code_test.ipynb
    ├─ environment.yml
    ├─ pyproject.toml
    ├─ README.md
