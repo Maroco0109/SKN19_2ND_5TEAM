@@ -64,8 +64,10 @@
 ### 2.3. 프로젝트 목적
 본 프로젝트의 목적은 다음과 같다.
 
-1. 알나린ㄹㅇ늘
-2. ㅇㄴ라ㅣㄴ라ㅣ
+1. 암 환자에 대한 시간에 따른 연속적인 생존율 예측
+   암 환자의 주요 사망 원인별 사망률을 예측하여 환자에 대한 예상 생존 기간을 예측
+2. 생존율 예측을 기반으로한 위험 점수 계산 및 예측
+   예측한 생존율을 기반으로 각 환자별 위험 정도를 0~100 사이의 점수로 계산하여 고위험군 환자를 한눈에 파악할 수 있도록 함
 
 
 ---
@@ -144,7 +146,45 @@ ___
 
 ## 6. **인공지능 학습 결과서**
 ---
-### -모델별 학습 결과
+
+### 6-1. 기본 모델 아이디어
+ 해당 시스템은 환자에 대한 사망원인별 연속적인 사망률을 예측하여, 고위험 요인에 대한 선제적 조치와 예방을 목적으로 한다.
+ 따라서 여러 시간대별 사망률을 예측할 수 있는 모델을 필요로 하고, 해당 형태를 구현하기 위하여 딥러닝 모델을 구현하여 사용하였다.
+ 기본 모델의 형태와 손실함수는 *DeepHit: A Deep Learning Approach to Survival Analysis with Competing Risks.* (Lee, Changhee, et al., 2018)를 기반으로 작성하였다.
+
+ <div align="center">
+  <img src="" alt="Deephit original" style="max-width: 100%; height: auto; margin-bottom: 20px;"/>
+  <br>
+  <i> Deephit 모델의 기본 구조 </i>
+</div>
+
+  DeepHit모델은 특성을 공유 Branch와 각 사건별 branch에 차례대로 통과시켜 이산화시킨 시간 별 사건 발생 확률을 예측하는 형태의 모델이다.
+
+### 6-2. 모델 개선 아이디어
+  Deephit 모델은 시간대별 사건 발생 확률을 예측하는 MLP 기반의 모델로, 학습 과정에 여러 모듈을 추가하여 성능 개선을 꾀할 수 있다.
+
+#### 6-2.1. SEBlock (Squeeze-and-Excitation Block)
+  Standard Scaler를 이용한 스케일링 대신 모델에 *Squeeze-and-Excitation Networks* (Jie Hu, Li Shen, Gang Sun, 2018) 에서 사용된 SEBlock 아이디어를 단순 특성 MLP에 적용하여 Feature Weighting
+
+#### 6-2.2. Residual Connection, Feature-wise Concat
+  모델의 학습을 돕고 성능을 향상시키기 위하여 사용
+   
+  - 모델의 깊이가 깊지 않아 늘어난 계산 복잡도에 비하여 성능 향상이 매우 미미하여 최종 모델에서는 사용하지 않음
+
+#### 6-2.3. 1D, 2D CNN
+  모델의 결과에 시간대별, 사건별 연관성을 추가하기 위하여 CNN을 사용
+
+  - 눈에 띄는 성능 향상을 보이지 않음
+
+#### -모델별 학습 결과
+
+### 6-3. 최종 모델 형태
+
+<div align="center">
+  <img src="" alt="Deephit SEBlock" style="max-width: 100%; height: auto; margin-bottom: 20px;"/>
+  <br>
+  <i> 최종 Deephit 모델 </i>
+</div>
 
 
 ## 7. **수행 결과**
