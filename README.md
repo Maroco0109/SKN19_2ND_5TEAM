@@ -201,25 +201,25 @@ ___
     <th>회고 내용</th>
   </tr>
   <tr>
-    <td>박준영 🧠</td>
+    <td>🧠 박준영</td>
     <td></td>
   </tr>
   <tr>
-    <td>강지완 🌡️</td>
+    <td>🌡️ 강지완</td>
     <td></td>
   </tr>
   <tr>
-    <td>김민정 👩🏻‍⚕️</td>
+    <td>👩🏻‍⚕️ 김민정 </td>
     <td>
 </td>
   </tr>
   <tr>
-    <td>이승원 🧑🏻‍⚕️</td>
+    <td>🧑🏻‍⚕️ 이승원</td>
     <td>
     </td>
   </tr>
   <tr>
-    <td>박소희 🫀</td>
+    <td>🫀 박소희</td>
     <td></td>
   </tr>
 </table>
