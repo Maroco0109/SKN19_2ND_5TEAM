@@ -215,6 +215,12 @@ ___
 > Integrated Brier Score (IBS): 0.2463
 
 
+#### **DeepHitSurvWithSEBlockCNN**
+
+> Concordance Index (C-index): 0.7302  
+> Integrated Brier Score (IBS): 0.2116
+
+
 
 ### 6-3. 최종 모델 형태
 
