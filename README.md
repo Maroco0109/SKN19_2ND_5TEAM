@@ -192,7 +192,15 @@ ___
 
   - 눈에 띄는 성능 향상을 보이지 않음
 
-#### 모델별 학습 결과
+### **📊 모델별 학습 결과**
+
+
+
+#### **DeepHitSurvWithSEBlock**
+
+
+Concordance Index (C-index): 0.6412  
+Integrated Brier Score (IBS): 0.2130
 
 
 
