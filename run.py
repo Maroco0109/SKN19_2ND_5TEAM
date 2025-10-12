@@ -27,7 +27,7 @@ hidden_size = (128, 64)             # 1번째, 2번째 hidden layer의 size
 time_bins = 91                      # 3개월 단위로 time을 split하여 각 구간으로 삼음 -> 최대 270개월 + 그 후
 num_events = 4                      # 사건의 개수
 
-input_params_path = "./parameters/deephit_model_feature.pth"
+input_params_path = "./parameters/deephit_model_2D_CNN.pth"
 device = torch.device("cpu")
 
 encoding_map = DataPreprocessing.load_category()
@@ -39,7 +39,7 @@ str_encoding_map = ModelAnalysis.clean_encoding_map(encoding_map, convert_values
 dp = DataPreprocessing(categories=str_encoding_map)
 
 # 모델 정의 (학습할 때 사용한 모델 클래스)
-model = Models.DeepHitSurvWithSEBlock(input_dim, 
+model = Models.DeepHitSurvWithSEBlockAnd2DCNN(input_dim, 
                     hidden_size, 
                     time_bins, 
                     num_events,

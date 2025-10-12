@@ -72,10 +72,16 @@ class DeepHitSurv(nn.Module) :
         s = self.shared(x)
         logits = torch.stack([head(s) for head in self.heads], dim=1)
 
-        pmf = F.softmax(logits, dim=-1) # 각 사건의 발생확률 계산
-        cif = torch.cumsum(pmf, dim=-1) # 각 사건의 누적발생확률 계산
+        batch_size, num_events, time_bins = logits.shape
 
-        return logits, pmf, cif         # 로짓값, pmf, cif 반환
+        # 사건+시간 전체에 대해 softmax 적용
+        pmf = F.softmax(logits.view(batch_size, -1), dim=1)
+        pmf = pmf.view(batch_size, num_events, time_bins)
+
+        # 시간에 따라 누적합 → CIF 계산
+        cif = torch.cumsum(pmf, dim=-1)
+
+        return logits, pmf, cif
 
 # SEBlock을 결합한 Deephit 모델
 class DeepHitSurvWithSEBlock(nn.Module):
