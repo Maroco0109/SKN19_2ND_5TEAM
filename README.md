@@ -196,11 +196,17 @@ ___
 
 
 
-#### **DeepHitSurvWithSEBlock**
+#### **DeepHitSurvWithSEBlock**  
 
 
-Concordance Index (C-index): 0.6412  
-Integrated Brier Score (IBS): 0.2130
+> Concordance Index (C-index): 0.6412  
+> Integrated Brier Score (IBS): 0.2130
+
+#### **DeepHitSurv**  
+
+
+> Concordance Index (C-index): 0.7980  
+> Integrated Brier Score (IBS): 0.2172
 
 
 
