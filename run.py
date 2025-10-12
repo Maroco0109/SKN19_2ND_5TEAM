@@ -33,29 +33,8 @@ device = torch.device("cpu")
 encoding_map = DataPreprocessing.load_category()
 print(type(encoding_map))
 
-def clean_encoding_map(encoding_map, convert_values_to_str=True):
-    cleaned_map = {}
-    for col, mapping in encoding_map.items():
-        # mapping이 dict인지 확인
-        if not isinstance(mapping, dict):
-            print(f"Warning: '{col}'의 mapping이 dict가 아니어서 건너뜀")
-            continue
-        
-        new_mapping = {}
-        for k, v in mapping.items():
-            # np.int64, np.float64 등 제거
-            if hasattr(k, "item"):
-                k = k.item()
-            if convert_values_to_str:
-                v = str(v)
-            elif hasattr(v, "item"):
-                v = v.item()
-            new_mapping[k] = v
-        cleaned_map[col] = new_mapping
-    return cleaned_map
-
 # 예시: 모든 값도 문자열로 변환하려면 convert_values_to_str=True
-str_encoding_map = clean_encoding_map(encoding_map, convert_values_to_str=True)
+str_encoding_map = ModelAnalysis.clean_encoding_map(encoding_map, convert_values_to_str=True)
 
 dp = DataPreprocessing(categories=str_encoding_map)
 
@@ -117,7 +96,6 @@ if st.button("예측 실행"):
         if col in input_df.columns and val is not None:
             input_df.at[0, col] = str(val)  # 무조건 str로 변환
 
-    # 5️⃣ 카테고리 인코딩
     input_df_encoded = dp.run(input_df)
 
     print(input_df_encoded)
@@ -129,8 +107,6 @@ if st.button("예측 실행"):
         model=model,
         device=device
     )
-
-    st.dataframe(result_df)
 
     ModelAnalysis.visualize_single_prediction(
         input_df=input_df,

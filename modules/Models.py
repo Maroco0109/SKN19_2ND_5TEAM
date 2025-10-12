@@ -146,11 +146,16 @@ class DeepHitSurvWithSEBlock(nn.Module):
 
         logits = torch.stack(logits_list, dim=1)
 
-        pmf = F.softmax(logits, dim=-1)
-        pmf_smooth = smooth_pmf_ema(pmf, alpha=self.smoothing_alpha)
+        batch_size, num_events, time_bins = logits.shape
+
+        # 사건+시간 전체에 대해 softmax 적용
+        pmf = F.softmax(logits.view(batch_size, -1), dim=1)
+        pmf = pmf.view(batch_size, num_events, time_bins)
+
+        # 시간에 따라 누적합 → CIF 계산
         cif = torch.cumsum(pmf, dim=-1)
 
-        return logits, pmf_smooth, cif
+        return logits, pmf, cif
 
 # Concat을 추가한 모델 구현
 class DeepHitSurvWithSEBlockConcat(nn.Module):
@@ -224,7 +229,13 @@ class DeepHitSurvWithSEBlockConcat(nn.Module):
             logits_list.append(self.heads[k](s_combined))
 
         logits = torch.stack(logits_list, dim=1)  # shape: (batch_size, num_events, time_bins)
-        pmf = F.softmax(logits, dim=-1)
+        batch_size, num_events, time_bins = logits.shape
+
+        # 사건+시간 전체에 대해 softmax 적용
+        pmf = F.softmax(logits.view(batch_size, -1), dim=1)
+        pmf = pmf.view(batch_size, num_events, time_bins)
+
+        # 시간에 따라 누적합 → CIF 계산
         cif = torch.cumsum(pmf, dim=-1)
 
         return logits, pmf, cif
@@ -314,8 +325,14 @@ class DeepHitSurvWithSEBlockCNN(nn.Module):
 
         # 사건별 합치기 -> (B, K, T)
         logits = torch.stack(logits_list, dim=1)
-        pmf = torch.stack(pmf_list, dim=1)
-        cif = torch.stack(cif_list, dim=1)
+        batch_size, num_events, time_bins = logits.shape
+
+        # 사건+시간 전체에 대해 softmax 적용
+        pmf = F.softmax(logits.view(batch_size, -1), dim=1)
+        pmf = pmf.view(batch_size, num_events, time_bins)
+
+        # 시간에 따라 누적합 → CIF 계산
+        cif = torch.cumsum(pmf, dim=-1)
 
         return logits, pmf, cif
 
@@ -396,7 +413,13 @@ class DeepHitSurvWithSEBlockAnd2DCNN(nn.Module):
         logits_refined = self.conv2d_block(x_cnn).squeeze(1)  # (B, 4, 91)
 
         # ----- [6] softmax + cumsum -----
-        pmf = F.softmax(logits_refined, dim=-1)
+        batch_size, num_events, time_bins = logits_refined.shape
+
+        # 사건+시간 전체에 대해 softmax 적용
+        pmf = F.softmax(logits_refined.view(batch_size, -1), dim=1)
+        pmf = pmf.view(batch_size, num_events, time_bins)
+
+        # 시간에 따라 누적합 → CIF 계산
         cif = torch.cumsum(pmf, dim=-1)
 
         return logits_refined, pmf, cif

@@ -98,7 +98,7 @@ def visualize_single_prediction(input_df, dp, model, device,
     ax_pmf.set_title('PMF (Probability Mass Function)')
     ax_pmf.legend()
     ax_pmf.grid(True)
-    ax_pmf.set_xlim(0, time_bins - 1)
+    ax_pmf.set_xlim(0, 90)
     ax_pmf.set_ylim(0, 1)
     st.pyplot(fig_pmf)
 
@@ -110,7 +110,7 @@ def visualize_single_prediction(input_df, dp, model, device,
     ax_cif.set_title('CIF (Cumulative Incidence Function)')
     ax_cif.legend()
     ax_cif.grid(True)
-    ax_cif.set_xlim(0, time_bins - 1)
+    ax_cif.set_xlim(0, 90)
     ax_cif.set_ylim(0, 1)
     st.pyplot(fig_cif)
 
@@ -128,7 +128,7 @@ def visualize_single_prediction(input_df, dp, model, device,
     ax_surv.set_ylabel('Survival Probability S(t)')
     ax_surv.set_title('Survival Curve (No Event Occurrence Probability)')
     ax_surv.grid(True)
-    ax_surv.set_xlim(0, time_bins - 1)
+    ax_surv.set_xlim(0, 90)
     ax_surv.set_ylim(0, 1)
     st.pyplot(fig_surv)
 
@@ -196,31 +196,26 @@ def compute_survival_metrics(pmf: torch.Tensor):
         'expected_time': expected_time
     }
 
-def encode_selected_values(input_df: pd.DataFrame, selected_values: dict, categories: dict) -> pd.DataFrame:
-    df_encoded = input_df.copy()
-
-    for col, val in selected_values.items():
-        if val is None:
-            df_encoded.at[0, col] = np.nan  # None이면 NaN
+def clean_encoding_map(encoding_map, convert_values_to_str=True):
+    cleaned_map = {}
+    for col, mapping in encoding_map.items():
+        # mapping이 dict인지 확인
+        if not isinstance(mapping, dict):
+            print(f"Warning: '{col}'의 mapping이 dict가 아니어서 건너뜀")
             continue
         
-        if col in df_encoded.columns and col in categories:
-            mapping = categories[col]
-            
-            # categories key 중 첫 번째 key의 타입 가져오기
-            sample_key = next(iter(mapping))
-            key_type = type(sample_key)
-            
-            try:
-                typed_val = key_type(val)
-            except Exception:
-                raise ValueError(f"{col}: '{val}'을(를) {key_type}로 변환할 수 없습니다.")
-            
-            df_encoded.at[0, col] = mapping.get(typed_val, np.nan)  # 없으면 NaN
-        else:
-            df_encoded.at[0, col] = val  # 숫자/문자 그대로
-
-    return df_encoded
+        new_mapping = {}
+        for k, v in mapping.items():
+            # np.int64, np.float64 등 제거
+            if hasattr(k, "item"):
+                k = k.item()
+            if convert_values_to_str:
+                v = str(v)
+            elif hasattr(v, "item"):
+                v = v.item()
+            new_mapping[k] = v
+        cleaned_map[col] = new_mapping
+    return cleaned_map
 
 
 # 예시
