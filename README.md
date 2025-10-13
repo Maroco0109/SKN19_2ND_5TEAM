@@ -193,29 +193,33 @@ ___
 - Concordance Index (C-index) : 임의의 사건 두 개를 뽑아서 어떤 사건이 더 먼저 발생했는지 비교했을때, 해당 비교에 대한 정확도
 - Integrated Brier Score (IBS) : 모델의 시간대별 오차 제곱의 평균 (MSE의 시간축에 대한 적분)
 
-#### **SEBlock**  
+
+<table>
+  <tr>
+    <th>활용모델</th>
+    <th>Concordance Index (C-index)</th>
+    <th>Integrated Brier Score (IBS)</th>
+    <th>Mean Absolute Error (MAE) of predicted time</th>
+  </tr>
+  <tr>
+    <th scope="row" style="text-align:left;">SEBlock</th>
+    <td>0.6412</td><td>0.2130</td><td>3.2790</td>
+  </tr>
+  <tr>
+    <th scope="row" style="text-align:left;">SEBlock + Feature concat</th>
+    <td>0.5558</td><td>0.2463</td><td>4.6994</td>
+  </tr>
+  <tr>
+    <th scope="row" style="text-align:left;">SEBlock + 1-dimensional CNN</th>
+    <td>0.7302</td><td>0.2116</td><td>3.6853</td>
+  </tr>
+  <tr>
+    <td>SEBlock + 2-dimensional CNN</td>
+    <td>0.8263</td><td>0.2005</td><td>2.9128</td>
+  </tr>
+</table>
 
 
-> Concordance Index (C-index): 0.6412  
-> Integrated Brier Score (IBS): 0.2130
-
-
-#### **SEBlock + Feature concat**
-
-> Concordance Index (C-index): 0.5558  
-> Integrated Brier Score (IBS): 0.2463
-
-
-#### **SEBlock + 1-dimensional CNN**
-
-> Concordance Index (C-index): 0.7302  
-> Integrated Brier Score (IBS): 0.2116
-
-
-#### **SEBlock + 2-dimensional CNN**
-
-> Concordance Index (C-index): 0.8263  
-> Integrated Brier Score (IBS): 0.2005
 
 
 ### 6-3. 최종 모델 형태
