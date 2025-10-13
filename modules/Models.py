@@ -85,7 +85,7 @@ class DeepHitSurv(nn.Module) :
 
 # SEBlock을 결합한 Deephit 모델
 class DeepHitSurvWithSEBlock(nn.Module):
-    def __init__(self, input_dim, hidden_size=(128, 64), time_bins=91, num_events=4, dropout=0.2, se_ratio=0.25, alpha=0.3):
+    def __init__(self, input_dim, hidden_size=(128, 64), time_bins=91, num_events=4, dropout=0.2, se_ratio=0.25):
         """
         input_dim : 특성의 개수
         hidden_size : hidden layer의 node 개수 (h1, h2)
@@ -98,7 +98,6 @@ class DeepHitSurvWithSEBlock(nn.Module):
         self.num_events = num_events
         self.T = time_bins
         self.input_dim = input_dim
-        self.smoothing_alpha = alpha
 
         # 모델 처음에 붙는 SEBlock : Feature weighting의 역할을 함
         se_hidden = max(1, int(input_dim * se_ratio))
