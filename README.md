@@ -214,7 +214,7 @@ ___
     <td>0.7302</td><td>0.2116</td><td>3.6853</td>
   </tr>
   <tr>
-    <td>SEBlock + 2-dimensional CNN</td>
+    <td><th scope="row" style="text-align:left;">SEBlock + 2-dimensional CNN</td>
     <td>0.8263</td><td>0.2005</td><td>2.9128</td>
   </tr>
 </table>
