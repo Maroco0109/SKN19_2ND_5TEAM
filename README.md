@@ -182,7 +182,7 @@ ___
 #### 6-2.2. Residual Connection, Feature-wise Concat
   모델의 학습을 돕고 성능을 향상시키기 위하여 사용
    
-  > 모델의 깊이가 깊지 않아 성능에 도움을 주지 않으므로 최종 모델에서는 사용하지 않음
+  > 모델의 깊이가 깊지 않아 성능에 도움을 주지 않아 최종 모델에서는 사용하지 않음
 
 #### 6-2.3. 1D, 2D CNN
   모델의 결과에 시간대별, 사건별 연관성을 추가하기 위하여 CNN을 사용
@@ -199,23 +199,31 @@ ___
     <th>활용모델</th>
     <th>Concordance Index (C-index)</th>
     <th>Integrated Brier Score (IBS)</th>
-    <th>Mean Absolute Error (MAE) of predicted time</th><td>0</td>
+    <th>MAE of predicted time</th>
+    <th>Hyper parameters</th>
   </tr>
   <tr>
     <th scope="row" style="text-align:left;">SEBlock</th>
-    <td>0.6412</td><td>0.2130</td><td>3.2790</td><td>0</td>
+    <td>0.6412</td><td>0.2130</td><td>3.2790</td>
+    <td>Hidden layer: (128, 64),<br> Time bins : 91,<br> SE ratio : 0.25</td>
   </tr>
   <tr>
     <th scope="row" style="text-align:left;">SEBlock + Feature concat</th>
-    <td>0.5558</td><td>0.2463</td><td>4.6994</td><td>0</td>
+    <td>0.5558</td><td>0.2463</td><td>4.6994</td>
+    <td>Hidden layer: (128, 64),<br>  
+      Time bins : 91,<br>  
+      SE ratio : 0.25</td>
   </tr>
   <tr>
     <th scope="row" style="text-align:left;">SEBlock + 1-dimensional CNN</th>
-    <td>0.7302</td><td>0.2116</td><td>3.6853</td><td>0</td>
+    <td>0.7302</td><td>0.2116</td><td>3.6853</td>
+    <td>Hidden layer: (128, 64),<br> Time bins : 91,<br> 
+      SE ratio : 0.25,<br> CNN kernel size : 3</td>
   </tr>
   <tr>
     <th scope="row" style="text-align:left;">SEBlock + 2-dimensional CNN</th>
-    <td>0.8263</td><td>0.2005</td><td>2.9128</td><td>0</td>
+    <td>0.8263</td><td>0.2005</td><td>2.9128</td>
+    <td>Hidden layer: (128, 64),<br> Time bins : 91,<br> SE ratio : 0.25,<br> CNN kernel size: (2,5), (2,3)</td>
   </tr>
 </table>
 
@@ -229,6 +237,11 @@ ___
   <br>
   <i> 최종 Deephit 모델 </i>
 </div>
+
+### 6-4. 위험 점수 계산
+
+모델을 통해 얻은 시간대별 사건 발생 확률(pmf)에 대한 가중치합을 계산한 후 Sigmoid를 통하여 0~100점 사이의 점수로 변환    
+가까운 시일 내에 사망할 확률이 높을 수록 높은 위험점수를 나타냄
 
 
 ## 7. **수행 결과**
