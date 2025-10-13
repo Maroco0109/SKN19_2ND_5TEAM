@@ -17,9 +17,9 @@ from modules.Models import compute_risk_score_sigmoid
 
 def predict_event_probabilities(
     input_df: pd.DataFrame,
-    dp,
     model,
     device: torch.device,
+    dp=None,
     time_column: str = 'Survival months_bin_3m',
     target_column: str = 'target_label'
 ) -> pd.DataFrame:
@@ -37,8 +37,10 @@ def predict_event_probabilities(
     Returns:
         pd.DataFrame: 사건별 × 시간별 CIF (마지막 시간 bin 제거)
     """
-
-    processed_df = dp.run(input_df)
+    if dp is not None :
+        processed_df = dp.run(input_df)
+    else :
+        processed_df = input_df
 
     drop_cols = [col for col in [time_column, target_column] if col in processed_df.columns]
     features_df = processed_df.drop(columns=drop_cols)
@@ -64,9 +66,10 @@ def predict_event_probabilities(
 
     return result_df
 
-def visualize_single_prediction(input_df, dp, model, device,
+def visualize_single_prediction(input_df, model, device,
                                 time_column='Survival months_bin_3m',
                                 target_column='target_label',
+                                dp=None,
                                 event_weights=None,
                                 time_lambda=0.05):
     """
@@ -74,7 +77,10 @@ def visualize_single_prediction(input_df, dp, model, device,
     마지막 시간 bin(dummy)은 제거됨
     """
 
-    processed_df = dp.run(input_df)
+    if dp is not None :
+        processed_df = dp.run(input_df)
+    else :
+        processed_df = input_df
 
     drop_cols = [col for col in [time_column, target_column] if col in processed_df.columns]
     features_df = processed_df.drop(columns=drop_cols)

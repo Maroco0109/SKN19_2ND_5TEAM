@@ -12,6 +12,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
+from torch.utils.data import DataLoader
 
 import torch
 
@@ -21,6 +22,16 @@ import modules.DataModify as DataModify
 from modules.DataSelect import DataPreprocessing
 
 import modules.Models as Models
+
+# Dataset 로드
+test_file = ['./data/test dataset_fixed.csv']
+test_dataset = DataModify.CancerDataset(
+    target_column='event',
+    time_column='time',
+    file_paths=test_file
+)
+
+test_loader = DataLoader(test_dataset, batch_size=1, shuffle=True)
 
 input_dim = 17                      # input dimension : data의 feature의 개수
 hidden_size = (128, 64)             # 1번째, 2번째 hidden layer의 size
@@ -114,3 +125,48 @@ if st.button("예측 실행"):
         model=model,
         device=device
     )
+
+if st.button("샘플 예측 실행"):
+    st.write("테스트 데이터셋에서 1개 샘플을 선택하여 예측을 수행합니다...")
+
+    # 🔹 feature 이름 복원 (원본 CSV에서 직접 읽기)
+    test_df = pd.read_csv(test_file[0])
+    feature_names = [col for col in test_df.columns if col not in ['time', 'event']]
+
+    model.eval()
+    with torch.no_grad():
+        for x, times, events in test_loader:
+            # batch_size = 1 기준 (첫 번째 샘플만 예측)
+            sample_input = x.cpu().numpy()
+            sample_time = times.item()
+            sample_event = events.item()
+
+            # DataFrame 복원
+            input_df = pd.DataFrame(sample_input, columns=feature_names)
+
+            # 🔹 예측 실행 (기존 함수 사용)
+            result_df = ModelAnalysis.predict_event_probabilities(
+                input_df=input_df,
+                model=model,
+                device=device,
+                time_column='time',
+                target_column='event'
+            )
+
+            # 🔹 시각화 (기존 함수 사용)
+            ModelAnalysis.visualize_single_prediction(
+                input_df=input_df,
+                model=model,
+                device=device,
+                time_column='time',
+                target_column='event'
+            )
+
+            # 🔹 실제 값 출력 (맨 마지막)
+            st.markdown("---")
+            st.subheader("📘 실제 값 정보")
+            st.write(f"**실제 관측 시간 (time):** {sample_time}")
+            st.write(f"**실제 사건 (event):** {sample_event}")
+
+            # 첫 번째 샘플만 사용
+            break
