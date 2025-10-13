@@ -213,7 +213,6 @@ def clean_encoding_map(encoding_map, convert_values_to_str=True):
     for col, mapping in encoding_map.items():
         # mapping이 dict인지 확인
         if not isinstance(mapping, dict):
-            print(f"Warning: '{col}'의 mapping이 dict가 아니어서 건너뜀")
             continue
         
         new_mapping = {}
@@ -228,8 +227,3 @@ def clean_encoding_map(encoding_map, convert_values_to_str=True):
             new_mapping[k] = v
         cleaned_map[col] = new_mapping
     return cleaned_map
-
-
-# 예시
-def show_model_graph(model, x, y, e, cols) :
-    pass
