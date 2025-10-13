@@ -199,23 +199,23 @@ ___
     <th>활용모델</th>
     <th>Concordance Index (C-index)</th>
     <th>Integrated Brier Score (IBS)</th>
-    <th>Mean Absolute Error (MAE) of predicted time</th>
+    <th>Mean Absolute Error (MAE) of predicted time</th><td>0</td>
   </tr>
   <tr>
     <th scope="row" style="text-align:left;">SEBlock</th>
-    <td>0.6412</td><td>0.2130</td><td>3.2790</td>
+    <td>0.6412</td><td>0.2130</td><td>3.2790</td><td>0</td>
   </tr>
   <tr>
     <th scope="row" style="text-align:left;">SEBlock + Feature concat</th>
-    <td>0.5558</td><td>0.2463</td><td>4.6994</td>
+    <td>0.5558</td><td>0.2463</td><td>4.6994</td><td>0</td>
   </tr>
   <tr>
     <th scope="row" style="text-align:left;">SEBlock + 1-dimensional CNN</th>
-    <td>0.7302</td><td>0.2116</td><td>3.6853</td>
+    <td>0.7302</td><td>0.2116</td><td>3.6853</td><td>0</td>
   </tr>
   <tr>
     <th scope="row" style="text-align:left;">SEBlock + 2-dimensional CNN</th>
-    <td>0.8263</td><td>0.2005</td><td>2.9128</td>
+    <td>0.8263</td><td>0.2005</td><td>2.9128</td><td>0</td>
   </tr>
 </table>
 
