@@ -120,17 +120,22 @@ def visualize_single_prediction(input_df, model, device,
     ax_cif.set_ylim(0, 1)
     st.pyplot(fig_cif)
 
-    pmf_np = pmf[0].cpu().numpy()  # (num_events, time_bins)
-    survival_probs = []
-    surv = 1.0
+    cif_np = cif[0].cpu().numpy()  # (num_events, time_bins)
+    num_events, time_bins = cif_np.shape
 
+    survival_probs = []
     pred_time = None
 
     for t in range(time_bins):
-        surv *= (1 - np.sum(pmf_np[:, t]))  # 모든 사건이 발생하지 않을 확률
+        surv = 1 - np.sum(cif_np[:, t])  # 🔹 joint survival from CIF
         survival_probs.append(surv)
-        if surv <= 0.9 and pred_time is None :
+
+        if surv <= 0.9 and pred_time is None:
             pred_time = t
+
+    if pred_time is None:
+        pred_time = time_bins - 1
+
 
     fig_surv, ax_surv = plt.subplots(figsize=(8, 4))
     ax_surv.plot(time_points, survival_probs, color='black', linewidth=2)
