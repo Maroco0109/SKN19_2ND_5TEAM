@@ -205,23 +205,25 @@ ___
   <tr>
     <th scope="row" style="text-align:left;">SEBlock</th>
     <td>0.6412</td><td>0.2130</td><td>3.2790</td>
-    <td>Hidden layer : (128, 64), Time bins : 91, SE ratio : 0.25</td>
+    <td>Hidden layer : (128, 64),<br> Time bins : 91,<br> SE ratio : 0.25</td>
   </tr>
   <tr>
     <th scope="row" style="text-align:left;">SEBlock + Feature concat</th>
     <td>0.5558</td><td>0.2463</td><td>4.6994</td>
-    <td>Hidden layer : (128, 64), Time bins : 91, SE ratio : 0.25</td>
+    <td>Hidden layer : (128, 64),<br>  
+      Time bins : 91,<br>  
+      SE ratio : 0.25</td>
   </tr>
   <tr>
     <th scope="row" style="text-align:left;">SEBlock + 1-dimensional CNN</th>
     <td>0.7302</td><td>0.2116</td><td>3.6853</td>
-    <td>Hidden layer : (128, 64), Time bins : 91, 
-      SE ratio : 0.25, CNN kernel size : 3</td>
+    <td>Hidden layer : (128, 64),<br> Time bins : 91,<br> 
+      SE ratio : 0.25,<br> CNN kernel size : 3</td>
   </tr>
   <tr>
     <th scope="row" style="text-align:left;">SEBlock + 2-dimensional CNN</th>
     <td>0.8263</td><td>0.2005</td><td>2.9128</td>
-    <td>Hidden layer : (128, 64), Time bins : 91, SE ratio : 0.25, CNN kernel size : (2, 5), (2,3)</td>
+    <td>Hidden layer : (128, 64),<br> Time bins : 91,<br> SE ratio : 0.25,<br> CNN kernel size : (2, 5), (2,3)</td>
   </tr>
 </table>
 
