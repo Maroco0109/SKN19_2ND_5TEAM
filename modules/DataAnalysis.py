@@ -426,6 +426,38 @@ def _build_year_label_map(df, year_col='Year of diagnosis'):
 
     return mapping
 
+
+def _decode_year_value(code, year_map):
+    """단일 연도 코드 값을 매핑 정보에 따라 디코딩."""
+    if not year_map or pd.isna(code):
+        return code
+    # 그대로 일치하는 키 우선
+    if code in year_map:
+        return year_map[code]
+    str_code = str(code)
+    if str_code in year_map:
+        return year_map[str_code]
+    try:
+        float_code = float(code)
+        if float_code in year_map:
+            return year_map[float_code]
+        int_code = int(float_code)
+        if int_code in year_map:
+            return year_map[int_code]
+        str_int_code = str(int_code)
+        if str_int_code in year_map:
+            return year_map[str_int_code]
+    except Exception:
+        ...
+    return code
+
+
+def _decode_year_series(codes, year_map):
+    """연도 코드 시퀀스를 매핑하여 디코딩된 값 Series 반환."""
+    if not hasattr(codes, 'map'):
+        codes = pd.Series(codes)
+    return codes.map(lambda v: _decode_year_value(v, year_map))
+
 def _ensure_survival_bin(df, col='Survival months', out_col='Survival months_bin_3m'):
     # 생존 개월 수를 3개월 단위 구간으로 변환하는 파생열 생성(없을 때만 생성)
     if out_col in df.columns:
@@ -607,10 +639,33 @@ def _plot_basic_distributions(encoded_cod_df):
 
     # 진단 연도별 환자 수 추이 (라인)
     if 'Year of diagnosis' in df.columns:
-        yr = df['Year of diagnosis'].value_counts().sort_index()
-        ax4.plot(yr.index.astype(int), yr.values, marker='o', linewidth=2)
-        ax4.set_title('진단 연도별 환자 수 추이', fontsize=14, fontweight='bold', pad=20)
-        ax4.set_xlabel('진단 연도'); ax4.set_ylabel('환자 수'); ax4.grid(True, alpha=0.3)
+        year_series = df['Year of diagnosis'].dropna()
+        if year_series.empty:
+            ax4.axis('off')
+        else:
+            year_counts = (year_series.value_counts()
+                                         .rename_axis('Year_code')
+                                         .reset_index(name='Count'))
+            year_map = _build_year_label_map(df, 'Year of diagnosis')
+            decoded_years = _decode_year_series(year_counts['Year_code'], year_map)
+            numeric_years = pd.to_numeric(decoded_years, errors='coerce')
+            if numeric_years.isna().all():
+                numeric_years = pd.to_numeric(year_counts['Year_code'], errors='coerce')
+            year_counts['Year_label'] = numeric_years
+            year_counts = year_counts.dropna(subset=['Year_label'])
+            if year_counts.empty:
+                ax4.axis('off')
+            else:
+                year_counts['Year_label'] = year_counts['Year_label'].astype(int)
+                year_counts = (year_counts.groupby('Year_label', as_index=False)['Count']
+                                          .sum()
+                                          .sort_values('Year_label'))
+                x_vals = year_counts['Year_label'].to_numpy()
+                ax4.plot(x_vals, year_counts['Count'], marker='o', linewidth=2)
+                ax4.set_title('진단 연도별 환자 수 추이', fontsize=14, fontweight='bold', pad=20)
+                ax4.set_xlabel('진단 연도'); ax4.set_ylabel('환자 수'); ax4.grid(True, alpha=0.3)
+                ax4.set_xticks(x_vals)
+                ax4.set_xticklabels([str(int(x)) for x in x_vals], rotation=45, ha='center')
     else:
         ax4.axis('off')
     plt.tight_layout(); plt.show()
@@ -1002,20 +1057,63 @@ def _plot_key_corr_and_impacts(encoded_cod_df):
         ax2.text(i, v + 0.5, f'{v:.1f}%p', ha='center', va='bottom', fontweight='bold')
 
     if 'Year of diagnosis' in df.columns and 'Vital status recode (study cutoff used)__enc' in df.columns:
-        years = sorted(df['Year of diagnosis'].dropna().unique())
-        stats = []
-        for y in years:
-            ydf = df[df['Year of diagnosis'] == y]
-            stats.append({'year': y, 'total_patients': len(ydf), 'survival_rate': (ydf['Vital status recode (study cutoff used)__enc'] == 0).mean() * 100, 'avg_age': ydf['Age recode with <1 year olds and 90+'].mean(), 'female_ratio': (ydf['Sex'] == 0).mean() * 100})
-        year_df = pd.DataFrame(stats)
-        ax3_twin = ax3.twinx()
-        line1 = ax3.plot(year_df['year'], year_df['survival_rate'], 'b-o', linewidth=2, markersize=4, label='생존율')
-        line2 = ax3_twin.plot(year_df['year'], year_df['total_patients'], 'r-s', linewidth=2, markersize=4, label='환자 수')
-        ax3.set_title('연도별 생존율 및 환자 수 변화', fontsize=12, fontweight='bold', pad=20)
-        ax3.set_xlabel('진단 연도'); ax3.set_ylabel('생존율 (%)', color='blue'); ax3_twin.set_ylabel('환자 수', color='red')
-        ax3.tick_params(axis='y', labelcolor='blue'); ax3_twin.tick_params(axis='y', labelcolor='red'); ax3.grid(True, alpha=0.3)
-        lines = line1 + line2; labels = [l.get_label() for l in lines]
-        ax3.legend(lines, labels, loc='upper left')
+        year_map = _build_year_label_map(df, 'Year of diagnosis')
+        year_df_src = df[['Year of diagnosis', 'Vital status recode (study cutoff used)__enc']].copy()
+        if 'Age recode with <1 year olds and 90+' in df.columns:
+            year_df_src['Age recode with <1 year olds and 90+'] = pd.to_numeric(df['Age recode with <1 year olds and 90+'], errors='coerce')
+        if 'Sex' in df.columns:
+            year_df_src['Sex'] = pd.to_numeric(df['Sex'], errors='coerce')
+        year_df_src = year_df_src.dropna(subset=['Year of diagnosis'])
+        year_df_src['Vital status recode (study cutoff used)__enc'] = pd.to_numeric(
+            year_df_src['Vital status recode (study cutoff used)__enc'], errors='coerce')
+        year_df_src = year_df_src.dropna(subset=['Vital status recode (study cutoff used)__enc'])
+        if year_df_src.empty:
+            ax3.axis('off')
+        else:
+            decoded_years = _decode_year_series(year_df_src['Year of diagnosis'], year_map)
+            numeric_years = pd.to_numeric(decoded_years, errors='coerce')
+            if numeric_years.isna().all():
+                numeric_years = pd.to_numeric(year_df_src['Year of diagnosis'], errors='coerce')
+            year_df_src['Year_label'] = numeric_years
+            year_df_src = year_df_src.dropna(subset=['Year_label'])
+            if year_df_src.empty:
+                ax3.axis('off')
+            else:
+                year_df_src['Year_label'] = year_df_src['Year_label'].astype(int)
+
+                def _pct_zero(series):
+                    s = pd.Series(series).dropna()
+                    if s.empty:
+                        return np.nan
+                    return (s == 0).mean() * 100
+
+                agg_kwargs = {
+                    'total_patients': ('Vital status recode (study cutoff used)__enc', 'size'),
+                    'survival_rate': ('Vital status recode (study cutoff used)__enc', _pct_zero),
+                }
+                if 'Age recode with <1 year olds and 90+' in year_df_src.columns:
+                    agg_kwargs['avg_age'] = ('Age recode with <1 year olds and 90+', 'mean')
+                if 'Sex' in year_df_src.columns:
+                    agg_kwargs['female_ratio'] = ('Sex', _pct_zero)
+
+                year_df = (year_df_src.groupby('Year_label')
+                                       .agg(**agg_kwargs)
+                                       .reset_index()
+                                       .rename(columns={'Year_label': 'year'})
+                                       .sort_values('year'))
+                if year_df.empty:
+                    ax3.axis('off')
+                else:
+                    ax3_twin = ax3.twinx()
+                    line1 = ax3.plot(year_df['year'], year_df['survival_rate'], 'b-o', linewidth=2, markersize=4, label='생존율')
+                    line2 = ax3_twin.plot(year_df['year'], year_df['total_patients'], 'r-s', linewidth=2, markersize=4, label='환자 수')
+                    ax3.set_title('연도별 생존율 및 환자 수 변화', fontsize=12, fontweight='bold', pad=20)
+                    ax3.set_xlabel('진단 연도'); ax3.set_ylabel('생존율 (%)', color='blue'); ax3_twin.set_ylabel('환자 수', color='red')
+                    ax3.tick_params(axis='y', labelcolor='blue'); ax3_twin.tick_params(axis='y', labelcolor='red'); ax3.grid(True, alpha=0.3)
+                    ax3.set_xticks(year_df['year'])
+                    ax3.set_xticklabels([str(int(y)) for y in year_df['year']], rotation=45, ha='center')
+                    lines = line1 + line2; labels = [l.get_label() for l in lines]
+                    ax3.legend(lines, labels, loc='upper left')
 
     ax4.axis('off')
     try:
