@@ -11,10 +11,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import matplotlib as mpl
 import matplotlib.cm as cm
 from pathlib import Path
-
+import inspect
+import re
 from IPython.display import display 
 
 import modules.DataModify as DataModify
@@ -36,6 +36,123 @@ def show_value_counts(df, cols=None, boundary=30) :
         print("-" * 20)
 
 # EDA
+
+# Matplotlib 시각화 결과를 insight/img 폴더에 자동 보관하기 위한 헬퍼
+if not hasattr(plt, '_dataanalysis_original_show'):
+    plt._dataanalysis_original_show = plt.show
+
+_FIG_SAVE_DIR = None
+_FIG_SAVE_DIR_ERROR = False
+_ORIGINAL_PLT_SHOW = plt._dataanalysis_original_show
+
+# insight/img 경로를 생성하고 캐싱: 저장 실패 시 한 번만 경고 후 중단
+def _get_fig_save_dir():
+    global _FIG_SAVE_DIR, _FIG_SAVE_DIR_ERROR
+    if _FIG_SAVE_DIR is not None or _FIG_SAVE_DIR_ERROR:
+        return _FIG_SAVE_DIR
+    try:
+        repo_root = Path(__file__).resolve().parents[1]
+        target = repo_root / 'insight' / 'img'
+        target.mkdir(parents=True, exist_ok=True)
+    except Exception as exc:
+        print(f"[DataAnalysis] Failed to prepare insight/img directory: {exc}")
+        _FIG_SAVE_DIR_ERROR = True
+        return None
+    _FIG_SAVE_DIR = target
+    return _FIG_SAVE_DIR
+
+
+# 파일명에 사용할 접두어를 안전한 문자열로 정규화
+def _sanitize_prefix(prefix: str) -> str:
+    clean = re.sub(r'[^0-9A-Za-z_-]+', '_', prefix or 'figure')
+    return clean.strip('_') or 'figure'
+
+
+# 호출 스택을 훑어 어떤 플롯 함수가 그림을 생성했는지 추론
+def _infer_plot_prefix():
+    for frame_info in inspect.stack():
+        name = frame_info.function
+        if name.startswith('_plot') or name.startswith('plot') or name.startswith('visualize'):
+            return name.lstrip('_')
+    return 'figure'
+
+
+# 접두어와 매칭되는 기존 이미지 제거(재실행 시 덮어쓰기 위함)
+def _clear_existing_exports(prefix: str):
+    directory = _get_fig_save_dir()
+    if directory is None:
+        return
+    for path in directory.glob(f"{prefix}*.png"):
+        try:
+            path.unlink()
+        except Exception:
+            ...
+
+
+def _save_axes_images(fig, directory: Path, prefix: str):
+    saved = []
+    try:
+        fig.canvas.draw()
+        renderer = fig.canvas.get_renderer()
+    except Exception as exc:
+        print(f"[DataAnalysis] Failed to prepare axes renderer: {exc}")
+        return saved
+    axes = [ax for ax in fig.get_axes() if ax.get_visible()]
+    if not axes:
+        return saved
+    for idx, ax in enumerate(axes, start=1):
+        try:
+            bbox = ax.get_tightbbox(renderer)
+            if bbox is None:
+                continue
+            bbox = bbox.expanded(1.02, 1.08)
+            bbox_inches = bbox.transformed(fig.dpi_scale_trans.inverted())
+            stem = f"{prefix}_ax{idx:02d}"
+            path = directory / f"{stem}.png"
+            fig.savefig(path, dpi=300, bbox_inches=bbox_inches)
+            saved.append(path)
+        except Exception as exc:
+            print(f"[DataAnalysis] Failed to save axes #{idx} for {prefix}: {exc}")
+    return saved
+
+
+def _save_current_figure(prefix: str = None):
+    directory = _get_fig_save_dir()
+    if directory is None:
+        return []
+    fig = plt.gcf()
+    if fig is None:
+        return []
+    prefix = _sanitize_prefix(prefix or _infer_plot_prefix())
+    _clear_existing_exports(prefix)
+    figure_path = directory / f"{prefix}.png"
+    try:
+        fig.savefig(figure_path, dpi=300, bbox_inches='tight')
+    except Exception as exc:
+        print(f"[DataAnalysis] Failed to save figure {figure_path}: {exc}")
+        return []
+    saved_paths = [figure_path]
+    saved_paths.extend(_save_axes_images(fig, directory, prefix))
+    return saved_paths
+
+
+def _show(*args, **kwargs):
+    prefix = kwargs.pop('filename_prefix', None)
+    saved_paths = _save_current_figure(prefix)
+    for path in saved_paths:
+        try:
+            rel = path.relative_to(Path.cwd())
+            location = rel
+        except ValueError:
+            location = path
+        label = 'axes' if '_ax' in path.stem else 'figure'
+        print(f"[DataAnalysis] Saved {label}: {location}")
+    return _ORIGINAL_PLT_SHOW(*args, **kwargs)
+
+
+if plt.show is not _show:
+    # 노트북/스크립트 어디에서든 plt.show 호출 시 자동 저장되도록 한 번만 교체
+    plt.show = _show
 
 def _set_style():
     # 시각화 공통 스타일 설정: seaborn 테마, 한글 폰트, 마이너스 부호 표시
@@ -255,6 +372,60 @@ def _augment_decoded_labels(encoded_cod_df):
         ...
     return df
 
+
+def _build_year_label_map(df, year_col='Year of diagnosis'):
+    """Encoded 연도 코드를 실제 연도 라벨로 매핑하는 헬퍼."""
+    if year_col not in df.columns:
+        return {}
+
+    def _register(mp, key, value):
+        try:
+            mp[key] = int(value)
+        except Exception:
+            mp[key] = value
+        try:
+            mp[int(key)] = int(value)
+        except Exception:
+            ...
+        mp[str(key)] = value
+
+    mapping = {}
+    try:
+        enc_df, _ = _load_encoded_data(None)
+    except Exception:
+        enc_df = None
+
+    if enc_df is not None and year_col in enc_df.columns:
+        # 1) Patient ID 매칭을 통한 직접 매핑
+        if 'Patient ID' in enc_df.columns and 'Patient ID' in df.columns:
+            try:
+                merged = (df[['Patient ID', year_col]].dropna()
+                          .merge(enc_df[['Patient ID', year_col]].dropna(),
+                                 on='Patient ID', suffixes=('_cod', '_orig')))
+                if not merged.empty:
+                    grp = merged.groupby(f'{year_col}_cod')[f'{year_col}_orig']
+                    for code, series in grp:
+                        s = pd.to_numeric(series, errors='coerce').dropna()
+                        if not s.empty:
+                            val = int(s.mode().iloc[0] if not s.mode().empty else s.iloc[0])
+                            _register(mapping, code, val)
+                        else:
+                            _register(mapping, code, series.iloc[0])
+            except Exception:
+                ...
+        # 2) 최소 연도 기반 오프셋 폴백
+        if not mapping:
+            try:
+                min_year = pd.to_numeric(enc_df[year_col], errors='coerce').dropna().min()
+                codes = pd.to_numeric(df[year_col], errors='coerce').dropna().astype(int).unique()
+                if pd.notna(min_year):
+                    for c in sorted(codes):
+                        _register(mapping, c, int(min_year) + int(c))
+            except Exception:
+                ...
+
+    return mapping
+
 def _ensure_survival_bin(df, col='Survival months', out_col='Survival months_bin_3m'):
     # 생존 개월 수를 3개월 단위 구간으로 변환하는 파생열 생성(없을 때만 생성)
     if out_col in df.columns:
@@ -274,9 +445,9 @@ def _plot_corr_with_target(encoded_df):
     exclude_cols = {
         'Unnamed: 0',
         'Patient ID',
-        # 요청: 생존 상태, COD 제외
         'Vital status recode (study cutoff used)__enc',
         'COD to site recode__enc',
+        'Survival months flag__enc'
     }
     num_cols = [c for c in num_cols if c not in exclude_cols]
     if not num_cols:
@@ -598,20 +769,42 @@ def _plot_site_survival_year(encoded_cod_df):
         ax3.axis('off')
 
     # 3-4. 진단 연도별 생존율 추이
-    if 'Year of diagnosis' in df.columns and 'Vital status recode (study cutoff used)__enc' in df.columns:
-        year_survival = df.groupby('Year of diagnosis')['Vital status recode (study cutoff used)__enc'].agg(['count', lambda x: (x == 0).mean() * 100]).reset_index()
-        year_survival.columns = ['Year', 'Count', 'Survival_Rate']
-        year_survival = year_survival[year_survival['Count'] >= 1000]
-        ax4.plot(year_survival['Year'], year_survival['Survival_Rate'], marker='o', linewidth=2, markersize=6, color='#FF6B6B')
-        ax4.set_title('진단 연도별 생존율 추이', fontsize=14, fontweight='bold', pad=20)
-        ax4.set_xlabel('진단 연도'); ax4.set_ylabel('생존율 (%)'); ax4.grid(True, alpha=0.3)
-        try:
-            ax4.set_ylim(80, 90)
-            z = np.polyfit(year_survival['Year'], year_survival['Survival_Rate'], 1)
-            p = np.poly1d(z)
-            ax4.plot(year_survival['Year'], p(year_survival['Year']), "--", alpha=0.8, color='blue', linewidth=2)
-        except Exception:
-            ...
+    survival_col = 'Vital status recode (study cutoff used)__enc'
+    if 'Year of diagnosis' in df.columns and survival_col in df.columns:
+        tmp_year = df[['Year of diagnosis', survival_col]].copy()
+        tmp_year[survival_col] = pd.to_numeric(tmp_year[survival_col], errors='coerce')
+        tmp_year = tmp_year.dropna(subset=[survival_col])
+        if tmp_year.empty:
+            ax4.axis('off')
+        else:
+            year_survival = tmp_year.groupby('Year of diagnosis')[survival_col].agg(
+                Count='size',
+                Survival_Rate=lambda x: (x == 0).mean() * 100 if len(x) else np.nan
+            ).reset_index().rename(columns={'Year of diagnosis': 'Year_code'})
+            year_survival = year_survival.dropna(subset=['Survival_Rate'])
+            year_survival = year_survival[year_survival['Count'] >= 1000]
+            year_map = _build_year_label_map(df, 'Year of diagnosis')
+            year_survival['Year_label'] = year_survival['Year_code'].map(year_map).fillna(year_survival['Year_code'])
+            year_survival['Year_label'] = pd.to_numeric(year_survival['Year_label'], errors='coerce')
+            year_survival = year_survival.dropna(subset=['Year_label'])
+            if year_survival.empty:
+                ax4.axis('off')
+            else:
+                year_survival['Year_label'] = year_survival['Year_label'].astype(int)
+                ax4.plot(year_survival['Year_label'], year_survival['Survival_Rate'], marker='o', linewidth=2, markersize=6, color='#FF6B6B')
+                ax4.set_title('진단 연도별 생존율 추이', fontsize=14, fontweight='bold', pad=20)
+                ax4.set_xlabel('진단 연도'); ax4.set_ylabel('생존율 (%)'); ax4.grid(True, alpha=0.3)
+                try:
+                    ax4.set_ylim(auto=True)
+                    x = year_survival['Year_label']
+                    z = np.polyfit(x, year_survival['Survival_Rate'], 1)
+                    p = np.poly1d(z)
+                    ax4.plot(x, p(x), "--", alpha=0.8, color='blue', linewidth=2)
+                except Exception:
+                    ...
+                ticks = sorted(year_survival['Year_label'].unique())
+                ax4.set_xticks(ticks)
+                ax4.set_xticklabels([str(t) for t in ticks], rotation=45, ha='center')
     else:
         ax4.axis('off')
     plt.tight_layout(); plt.show()
@@ -936,11 +1129,6 @@ def _plot_cod_top_and_age_pattern(encoded_cod_df):
     plt.tight_layout(); plt.show()
 
 
-def _plot_cod_analysis(encoded_cod_df):
-    # 유지: 레거시 버전(사용 안함). 노트북과 동일한 버전은 _plot_cod_top_and_age_pattern 사용.
-    return
-
-
 def _plot_target_extras(encoded_cod_df):
     # [타깃 분포] 노트북 셀 24: target_label 카운트만 출력
     if 'target_label' not in encoded_cod_df.columns:
@@ -1059,35 +1247,16 @@ def _plot_yearly_event_and_classes(encoded_cod_df):
         return
     drop_cols = ['Vital status recode (study cutoff used)','Vital status recode (study cutoff used)__enc','Survival months flag','Survival months flag__enc','COD to site recode','COD to site recode__enc']
     df_t = encoded_cod_df.drop(columns=[c for c in drop_cols if c in encoded_cod_df.columns], errors='ignore').copy()
-    # 연도 코드 → 원본 연도 라벨 매핑 구성
-    def _build_year_map():
-        try:
-            enc_df, _ = _load_encoded_data(None)
-            if 'Patient ID' in enc_df.columns and 'Patient ID' in df_t.columns and 'Year of diagnosis' in enc_df.columns:
-                merged = df_t[['Patient ID', 'Year of diagnosis']].merge(
-                    enc_df[['Patient ID', 'Year of diagnosis']], on='Patient ID', suffixes=('_cod','_orig')
-                )
-                grp = merged.groupby('Year of diagnosis_cod')['Year of diagnosis_orig']
-                # 각 코드에 대한 최빈 원본 연도 사용
-                mp = grp.agg(lambda s: s.mode().iloc[0] if not s.mode().empty else s.iloc[0]).to_dict()
-                return mp
-        except Exception:
-            pass
-        # 폴백: 원본 데이터에서 최소 연도를 찾아 0→min_year 오프셋 적용
-        try:
-            enc_df, _ = _load_encoded_data(None)
-            if 'Year of diagnosis' in enc_df.columns:
-                min_y = pd.to_numeric(enc_df['Year of diagnosis'], errors='coerce').dropna().min()
-                uniq_codes = sorted(pd.to_numeric(df_t['Year of diagnosis'], errors='coerce').dropna().unique().astype(int).tolist())
-                return {c: int(min_y) + int(c) for c in uniq_codes}
-        except Exception:
-            pass
-        return {}
-
-    year_map = _build_year_map()
+    # 연도 코드 → 원본 연도 라벨 매핑
+    year_map = _build_year_label_map(df_t, 'Year of diagnosis')
     # 사건 확률 연도별
     year_df = df_t.groupby('Year of diagnosis')['target_label'].apply(lambda x: (x != -1).mean() * 100).reset_index(name='Event_Rate')
-    year_df['Year_label'] = year_df['Year of diagnosis'].map(year_map).fillna(year_df['Year of diagnosis']).astype(int)
+    year_df['Year_label'] = year_df['Year of diagnosis'].map(year_map).fillna(year_df['Year of diagnosis'])
+    year_df['Year_label'] = pd.to_numeric(year_df['Year_label'], errors='coerce')
+    year_df = year_df.dropna(subset=['Year_label'])
+    if year_df.empty:
+        return
+    year_df['Year_label'] = year_df['Year_label'].astype(int)
     plt.figure(figsize=(7,4))
     sns.lineplot(data=year_df, x='Year_label', y='Event_Rate', marker='o', linewidth=2, color='#3A86FF')
     plt.title('진단 연도별 사건 확률 추이 (P(target_label != -1))', fontsize=13, fontweight='bold')
@@ -1110,7 +1279,12 @@ def _plot_yearly_event_and_classes(encoded_cod_df):
     if d.empty:
         return
     # 연도 코드 → 라벨로 변환하여 x축에 실제 연도 표시
-    d['Year_label'] = d[year_col].map(year_map).fillna(d[year_col]).astype(int)
+    d['Year_label'] = d[year_col].map(year_map).fillna(d[year_col])
+    d['Year_label'] = pd.to_numeric(d['Year_label'], errors='coerce')
+    d = d.dropna(subset=['Year_label'])
+    if d.empty:
+        return
+    d['Year_label'] = d['Year_label'].astype(int)
     years = sorted(d['Year_label'].dropna().unique().astype(int).tolist())
     counts = d.groupby(['Year_label', 'target_label']).size().unstack(fill_value=0)
     keep = [c for c in [0,1,2,3] if c in counts.columns]
