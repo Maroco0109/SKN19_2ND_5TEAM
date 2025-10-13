@@ -105,7 +105,7 @@ def visualize_single_prediction(input_df, model, device,
     ax_pmf.legend()
     ax_pmf.grid(True)
     ax_pmf.set_xlim(0, 90)
-    ax_pmf.set_ylim(0, 1)
+    ax_pmf.set_ylim(0, 0.2)
     st.pyplot(fig_pmf)
 
     fig_cif, ax_cif = plt.subplots(figsize=(8, 4))
@@ -124,9 +124,13 @@ def visualize_single_prediction(input_df, model, device,
     survival_probs = []
     surv = 1.0
 
+    pred_time = None
+
     for t in range(time_bins):
         surv *= (1 - np.sum(pmf_np[:, t]))  # 모든 사건이 발생하지 않을 확률
         survival_probs.append(surv)
+        if surv <= 0.9 and pred_time is None :
+            pred_time = t
 
     fig_surv, ax_surv = plt.subplots(figsize=(8, 4))
     ax_surv.plot(time_points, survival_probs, color='black', linewidth=2)
@@ -141,6 +145,8 @@ def visualize_single_prediction(input_df, model, device,
     risk_score = compute_risk_score_sigmoid(pmf, time_lambda=time_lambda, event_weights=event_weights)
     st.subheader("⚠️ 위험 점수 (Risk Score)")
     st.write(f"{risk_score.item():.2f} / 100")
+
+    return pred_time
 
 def dataset_to_dataframe(ds):
     data_list = []

@@ -165,12 +165,13 @@ if st.button("샘플 예측 실행"):
             )
 
             # 🔹 시각화
-            ModelAnalysis.visualize_single_prediction(
+            pred_time = ModelAnalysis.visualize_single_prediction(
                 input_df=input_df,
                 model=model,
                 device=device,
                 time_column='time',
-                target_column='event'
+                target_column='event',
+                event_weights = [3.0, 5.0, 5.0, 10.0]
             )
 
             # 🔹 실제 값 출력
