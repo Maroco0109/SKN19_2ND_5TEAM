@@ -113,14 +113,6 @@ TEAMPROJECT/
    │  ├─ Suicide.csv
    │  └─ test dataset.csv
    │
-   ├─ parameters/
-   │  ├─ categories.pkl
-   │  ├─ deephit_model_2D_CNN.pth
-   │  ├─ deephit_model_CNN.pth
-   │  ├─ deephit_model_Concat.pth
-   │  ├─ deephit_model_feature.pth
-   │  └─ deephit_model_feature_original_Deephit.pth
-   │
    ├─ insight/
    │  ├─ COD list.ipynb
    │  ├─ data_encode_insight_kmj.ipynb
@@ -141,7 +133,11 @@ TEAMPROJECT/
    │
    ├─ parameters/
    │  ├─ categories.pkl
-   │  └─ deephit_model_feature.pth
+   │  ├─ deephit_model_2D_CNN.pth
+   │  ├─ deephit_model_CNN.pth
+   │  ├─ deephit_model_Concat.pth
+   │  ├─ deephit_model_feature.pth
+   │  └─ deephit_model_feature_original_Deephit.pth 
    │
    ├─ .gitignore
    ├─ Analysis.ipynb
