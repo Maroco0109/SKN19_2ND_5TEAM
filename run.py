@@ -126,25 +126,36 @@ if st.button("예측 실행"):
         device=device
     )
 
+# Streamlit selectbox로 event 라벨 선택
+all_events = sorted(list(set([label for _, _, label in test_dataset])))
+selected_event_label = st.selectbox(
+    "예측할 사건(event) 라벨 선택",
+    [-1, 0, 1, 2, 3]
+)
+
 if st.button("샘플 예측 실행"):
-    st.write("테스트 데이터셋에서 1개 샘플을 선택하여 예측을 수행합니다...")
+    st.write(f"선택한 사건(event={selected_event_label}) 라벨에서 1개 샘플을 랜덤으로 선택하여 예측합니다...")
 
-    # 🔹 feature 이름 복원 (원본 CSV에서 직접 읽기)
-    test_df = pd.read_csv(test_file[0])
-    feature_names = [col for col in test_df.columns if col not in ['time', 'event']]
+    # 🔹 test_dataset에서 선택한 event 샘플 인덱스 찾기
+    indices = [i for i, (_, _, event) in enumerate(test_dataset) if event == selected_event_label]
 
-    model.eval()
-    with torch.no_grad():
-        for x, times, events in test_loader:
-            # batch_size = 1 기준 (첫 번째 샘플만 예측)
-            sample_input = x.cpu().numpy()
-            sample_time = times.item()
-            sample_event = events.item()
+    if not indices:
+        st.warning("선택한 사건 라벨에 해당하는 샘플이 없습니다.")
+    else:
+        # 🔹 랜덤으로 하나 선택
+        import random
+        selected_idx = random.choice(indices)
+        x, time_val, event_val = test_dataset[selected_idx]
 
-            # DataFrame 복원
-            input_df = pd.DataFrame(sample_input, columns=feature_names)
+        # 배치 차원 추가
+        sample_input = x.unsqueeze(0)  # shape: (1, num_features)
 
-            # 🔹 예측 실행 (기존 함수 사용)
+        model.eval()
+        with torch.no_grad():
+            # 🔹 DataFrame 변환 (컬럼 이름 무시)
+            input_df = pd.DataFrame(sample_input.numpy())
+
+            # 🔹 예측 실행
             result_df = ModelAnalysis.predict_event_probabilities(
                 input_df=input_df,
                 model=model,
@@ -153,7 +164,7 @@ if st.button("샘플 예측 실행"):
                 target_column='event'
             )
 
-            # 🔹 시각화 (기존 함수 사용)
+            # 🔹 시각화
             ModelAnalysis.visualize_single_prediction(
                 input_df=input_df,
                 model=model,
@@ -162,11 +173,8 @@ if st.button("샘플 예측 실행"):
                 target_column='event'
             )
 
-            # 🔹 실제 값 출력 (맨 마지막)
+            # 🔹 실제 값 출력
             st.markdown("---")
             st.subheader("📘 실제 값 정보")
-            st.write(f"**실제 관측 시간 (time):** {sample_time}")
-            st.write(f"**실제 사건 (event):** {sample_event}")
-
-            # 첫 번째 샘플만 사용
-            break
+            st.write(f"**실제 관측 시간 (time):** {time_val}")
+            st.write(f"**실제 사건 (event):** {event_val}")

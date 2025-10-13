@@ -98,7 +98,7 @@ def visualize_single_prediction(input_df, model, device,
 
     fig_pmf, ax_pmf = plt.subplots(figsize=(8, 4))
     for k in range(num_events):
-        ax_pmf.plot(time_points, pmf[0, k].cpu().numpy().flatten(), label=f'Event {k+1}')
+        ax_pmf.plot(time_points, pmf[0, k].cpu().numpy().flatten(), label=f'Event {k}')
     ax_pmf.set_xlabel('Time bins')
     ax_pmf.set_ylabel('Probability (PMF)')
     ax_pmf.set_title('PMF (Probability Mass Function)')
@@ -110,7 +110,7 @@ def visualize_single_prediction(input_df, model, device,
 
     fig_cif, ax_cif = plt.subplots(figsize=(8, 4))
     for k in range(num_events):
-        ax_cif.plot(time_points, cif[0, k].cpu().numpy().flatten(), label=f'Event {k+1}')
+        ax_cif.plot(time_points, cif[0, k].cpu().numpy().flatten(), label=f'Event {k}')
     ax_cif.set_xlabel('Time bins')
     ax_cif.set_ylabel('Cumulative Probability (CIF)')
     ax_cif.set_title('CIF (Cumulative Incidence Function)')
