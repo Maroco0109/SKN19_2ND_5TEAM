@@ -197,11 +197,11 @@ TEAMPROJECT/
  기본 모델의 형태와 손실함수는 *DeepHit: A Deep Learning Approach to Survival Analysis with Competing Risks.* (Lee, Changhee, et al., 2018)를 기반으로 작성하였다.  
 
  <div align="center">
-    <img src="./data/images/Deephit_original.png" alt="Deephit original" style="max-width: 100%; height: auto; margin-bottom: 20px;"/>
+    <img src="./data/images/Deephit_original.png" alt="Deephit original" style="max-width: 100%; height: auto; margin-bottom: 20px;"/>  
+    <br>
+    <i> Deephit 모델의 기본 구조 </i>
 </div>
- 
-  <br>
-  <i> Deephit 모델의 기본 구조 </i>
+
 
   DeepHit모델은 특성을 공유 Branch와 각 사건별 Branch에 차례대로 통과시켜 이산화시킨 시간 별 사건 발생 확률을 예측하는 형태의 모델이다.
 
@@ -224,7 +224,7 @@ TEAMPROJECT/
 #### **모델 성능 평가 지표**
 - Concordance Index (C-index) : 임의의 사건 두 개를 뽑아서 어떤 사건이 더 먼저 발생했는지 비교했을때, 해당 비교에 대한 정확도
 - Integrated Brier Score (IBS) : 모델의 시간대별 오차 제곱의 평균 (MSE의 시간축에 대한 적분)
-
+- MAE of predicted time : 모델이 예측한 생존 기간과, 실제 생존 기간 사이의 평균 오차
 
 <table>
   <tr>
@@ -259,15 +259,37 @@ TEAMPROJECT/
   </tr>
 </table>
 
+### **하이퍼파라미터 튜닝 및 학습 최적화**
+기본 파라미터로 학습하였을 때, 가장 좋은 성능을 보인 모델에 대해서 하이퍼 파라미터 튜닝과 학습 최적화를 진행
+#### **학습 최적화 결과**
+Batch Normalization + 스케줄러를 이용한 학습 최적화 결과
 
+<table>
+  <tr>
+    <th>Concordance Index (C-index)</th>
+    <th>Integrated Brier Score (IBS)</th>
+    <th>MAE of predicted time</th>
+  </tr>
+  <tr>
+    <td>0.9144</td><td>0.1638</td><td>5.3622</td>
+  </tr>
+</table>
 
 
 ### 6-3. 최종 모델 형태
 
 <div align="center">
-  <img src="./data/images/Deephit CNN.png" alt="Deephit SEBlock" style="max-width: 100%; height: auto; margin-bottom: 20px;"/>
+  <img src="./data/images/model2.png" alt="Deephit SEBlock" style="max-width: 100%; height: auto; margin-bottom: 20px;"/>
   <br>
   <i> 최종 Deephit 모델 </i>
+</div>
+
+<br>
+
+<div align="center">
+  <img src="./data/images/Deephit CNN.png" alt="Deephit SEBlock" style="max-width: 100%; height: auto; margin-bottom: 20px;"/>
+  <br>
+  <i> 최종 모델의 상세 구조 </i>
 </div>
 
 ### 6-4. 위험 점수 계산
