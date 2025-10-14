@@ -19,6 +19,23 @@ from IPython.display import display
 
 import modules.DataModify as DataModify
 
+_TARGET_LABEL_ORDER = [-1, 0, 1, 2, 3]
+_TARGET_LABEL_KOR = {
+    -1: '생존',
+    0: '암 관련 사망',
+    1: '합병증 사망',
+    2: '기타 질환 사망',
+    3: '자살/자해'
+}
+_TARGET_LABEL_PALETTE = {
+    -1: '#4D908E',
+    0: '#F94144',
+    1: '#F8961E',
+    2: '#577590',
+    3: '#9B5DE5'
+}
+_TARGET_EVENT_ORDER = [0, 1, 2, 3]
+
 # 데이터 프레임에서, 범주형 데이터에 속하는 값들의 컬럼값을 출력
 def show_value_counts(df, cols=None, boundary=30) :
     for col in df.columns:
@@ -1227,6 +1244,330 @@ def _plot_cod_top_and_age_pattern(encoded_cod_df):
     plt.tight_layout(); plt.show()
 
 
+def _plot_target_label_by_gender(encoded_cod_df):
+    if 'target_label' not in encoded_cod_df.columns or 'Sex' not in encoded_cod_df.columns:
+        return
+    df = _augment_decoded_labels(encoded_cod_df.copy())
+    data = df[['Sex', 'target_label']].dropna()
+    if data.empty:
+        return
+    data['target_label'] = pd.to_numeric(data['target_label'], errors='coerce')
+    data = data[data['target_label'].isin(_TARGET_EVENT_ORDER)]
+    if data.empty:
+        return
+
+    sex_map = {
+        0: '여성', 1: '남성',
+        '0': '여성', '1': '남성',
+        'Female': '여성', 'Male': '남성',
+        'female': '여성', 'male': '남성',
+        'F': '여성', 'M': '남성'
+    }
+
+    def _map_sex(v):
+        if pd.isna(v):
+            return '기타/미상'
+        if v in sex_map:
+            return sex_map[v]
+        vs = str(v).strip()
+        return sex_map.get(vs, sex_map.get(vs.title(), '기타/미상'))
+
+    data['Sex_label'] = data['Sex'].map(_map_sex)
+    counts = data.groupby(['Sex_label', 'target_label']).size().unstack(fill_value=0)
+    counts = counts[[c for c in _TARGET_EVENT_ORDER if c in counts.columns]]
+    counts = counts[counts.sum(axis=1) > 0]
+    if counts.empty:
+        return
+
+    order_index = counts.sum(axis=1).sort_values(ascending=False).index
+    counts = counts.reindex(order_index)
+    perc = counts.div(counts.sum(axis=1), axis=0) * 100
+
+    fig, ax = plt.subplots(figsize=(7, 4))
+    bottom = np.zeros(len(perc))
+    x = np.arange(len(perc.index))
+    for target in counts.columns:
+        values = perc[target].to_numpy()
+        ax.bar(
+            x,
+            values,
+            bottom=bottom,
+            color=_TARGET_LABEL_PALETTE.get(target, '#999999'),
+            label=_TARGET_LABEL_KOR.get(target, str(target))
+        )
+        bottom += values
+    for idx, (label, total) in enumerate(counts.sum(axis=1).items()):
+        ax.text(
+            x[idx],
+            100.5,
+            f'n={int(total):,}',
+            ha='center',
+            va='bottom',
+            fontsize=9
+        )
+    ax.set_xticks(x)
+    ax.set_xticklabels(perc.index, fontsize=11)
+    ax.set_ylim(0, 108)
+    ax.set_ylabel('구성비(%)')
+    ax.set_title('성별별 target_label 분포 (사망 클래스)', fontsize=13, fontweight='bold')
+    legend_handles = [
+        plt.Rectangle((0, 0), 1, 1, color=_TARGET_LABEL_PALETTE.get(lbl, '#999999'))
+        for lbl in counts.columns
+    ]
+    legend_labels = [_TARGET_LABEL_KOR.get(lbl, str(lbl)) for lbl in counts.columns]
+    ax.legend(legend_handles, legend_labels, title='target_label', bbox_to_anchor=(1.02, 1), loc='upper left')
+    mapping_text = '\n'.join([f'{lbl}: {_TARGET_LABEL_KOR[lbl]}' for lbl in counts.columns if lbl in _TARGET_LABEL_KOR])
+    ax.text(
+        0.98,
+        0.02,
+        mapping_text,
+        transform=ax.transAxes,
+        ha='right',
+        va='bottom',
+        fontsize=9,
+        bbox=dict(boxstyle='round,pad=0.4', facecolor='white', alpha=0.8)
+    )
+    plt.tight_layout()
+    plt.show()
+
+
+def _plot_target_label_by_stage(encoded_cod_df):
+    stage_col = 'Combined Summary Stage with Expanded Regional Codes (2004+)'
+    if 'target_label' not in encoded_cod_df.columns or stage_col not in encoded_cod_df.columns:
+        return
+    df = _augment_decoded_labels(encoded_cod_df.copy())
+    data = df[[stage_col, 'target_label']].dropna()
+    if data.empty:
+        return
+    data['target_label'] = pd.to_numeric(data['target_label'], errors='coerce')
+    data = data[data['target_label'].isin(_TARGET_EVENT_ORDER)]
+    if data.empty:
+        return
+
+    exp_to_basic = {0: 0, 1: 1, 2: 2, 3: 2, 4: 2, 5: 2, 6: 9, 7: 3, 8: 9, 9: 9}
+
+    def _map_stage(v):
+        if pd.isna(v):
+            return 9
+        if isinstance(v, (int, np.integer)):
+            return exp_to_basic.get(int(v), 9)
+        try:
+            iv = int(float(str(v)))
+            return exp_to_basic.get(iv, 9)
+        except Exception:
+            s = str(v).strip().lower()
+            if 'in situ' in s:
+                return 0
+            if 'localized' in s:
+                return 1
+            if 'regional' in s:
+                return 2
+            if 'distant' in s:
+                return 3
+            return 9
+
+    data['Stage_basic'] = data[stage_col].map(_map_stage)
+    data = data[data['Stage_basic'].isin([0, 1, 2, 3, 9])]
+    if data.empty:
+        return
+
+    counts = data.groupby(['Stage_basic', 'target_label']).size().unstack(fill_value=0)
+    counts = counts[[c for c in _TARGET_EVENT_ORDER if c in counts.columns]]
+    counts = counts[counts.sum(axis=1) > 0]
+    if counts.empty:
+        return
+    stage_order = [s for s in [0, 1, 2, 3, 9] if s in counts.index]
+    counts = counts.reindex(stage_order)
+    perc = counts.div(counts.sum(axis=1), axis=0) * 100
+
+    stage_labels = {
+        0: 'Stage 0\n(In situ)',
+        1: 'Stage I\n(Localized)',
+        2: 'Stage II·III\n(Regional)',
+        3: 'Stage IV\n(Distant)',
+        9: 'Stage ?\n(Unknown)'
+    }
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
+    bottom = np.zeros(len(perc))
+    x = np.arange(len(perc.index))
+    for target in counts.columns:
+        values = perc[target].to_numpy()
+        ax1.bar(
+            x,
+            values,
+            bottom=bottom,
+            color=_TARGET_LABEL_PALETTE.get(target, '#999999'),
+            label=_TARGET_LABEL_KOR.get(target, str(target))
+        )
+        bottom += values
+    for idx, (stage, total) in enumerate(counts.sum(axis=1).items()):
+        ax1.text(
+            x[idx],
+            100.5,
+            f'n={int(total):,}',
+            ha='center',
+            va='bottom',
+            fontsize=9
+        )
+    ax1.set_xticks(x)
+    ax1.set_xticklabels([stage_labels.get(s, str(s)) for s in perc.index], fontsize=10)
+    ax1.set_ylim(0, 108)
+    ax1.set_ylabel('구성비(%)')
+    ax1.set_title('병기별 target_label 분포 (사망 클래스)', fontsize=13, fontweight='bold')
+    ax1.legend(
+        [plt.Rectangle((0, 0), 1, 1, color=_TARGET_LABEL_PALETTE.get(lbl, '#999999')) for lbl in counts.columns],
+        [_TARGET_LABEL_KOR.get(lbl, str(lbl)) for lbl in counts.columns],
+        title='target_label',
+        bbox_to_anchor=(1.02, 1),
+        loc='upper left'
+    )
+
+    heat = perc.T
+    sns.heatmap(
+        heat,
+        ax=ax2,
+        annot=True,
+        fmt='.1f',
+        cmap='YlGnBu',
+        vmin=0,
+        vmax=100,
+        cbar_kws={'label': '구성비(%)'}
+    )
+    ax2.set_title('병기 x target_label 구성비 히트맵', fontsize=13, fontweight='bold')
+    ax2.set_xlabel('Stage')
+    ax2.set_ylabel('target_label')
+    ax2.set_xticklabels([stage_labels.get(s, str(s)) for s in heat.columns], rotation=45, ha='right')
+    ax2.set_yticklabels([_TARGET_LABEL_KOR.get(t, str(t)) for t in heat.index], rotation=0)
+    ax2.set_facecolor('#f8f9fa')
+    plt.tight_layout()
+    plt.show()
+
+
+def _plot_target_label_by_surgery(encoded_cod_df):
+    col = 'RX Summ--Surg Prim Site (1998+)'
+    if 'target_label' not in encoded_cod_df.columns or col not in encoded_cod_df.columns:
+        return
+    df = _augment_decoded_labels(encoded_cod_df.copy())
+    data = df[[col, 'target_label']].dropna(subset=['target_label'])
+    if data.empty:
+        return
+    data['target_label'] = pd.to_numeric(data['target_label'], errors='coerce')
+    data = data[data['target_label'].isin(_TARGET_EVENT_ORDER)]
+    if data.empty:
+        return
+
+    def _map_surgery(val):
+        if pd.isna(val):
+            return '미상'
+        try:
+            code = int(float(str(val).strip()))
+        except Exception:
+            return '기타/희귀'
+        if code <= 0:
+            return '수술 없음'
+        if 10 <= code <= 29:
+            return '국소·부분 치료'
+        if 30 <= code <= 39:
+            return '부분 절제'
+        if 40 <= code <= 59:
+            return '광범위 절제'
+        if 60 <= code <= 79:
+            return '근치 수술'
+        if 80 <= code <= 89:
+            return '수술+복합 치료'
+        if code == 90:
+            return '수술 여부 미상'
+        if code == 98:
+            return '적용 불가'
+        if code == 99:
+            return '미상'
+        return '기타/희귀'
+
+    data['surgery_bucket'] = data[col].map(_map_surgery)
+    bucket_counts = data['surgery_bucket'].value_counts()
+    if bucket_counts.empty:
+        return
+    top_buckets = bucket_counts.head(6).index
+    data['surgery_bucket'] = data['surgery_bucket'].where(data['surgery_bucket'].isin(top_buckets), '기타/소수')
+    bucket_counts = data['surgery_bucket'].value_counts()
+    bucket_order = bucket_counts.index.tolist()
+
+    counts = data.groupby(['surgery_bucket', 'target_label']).size().unstack(fill_value=0)
+    counts = counts[[c for c in _TARGET_EVENT_ORDER if c in counts.columns]]
+    counts = counts.reindex(bucket_order)
+    counts = counts[counts.sum(axis=1) > 0]
+    if counts.empty:
+        return
+    perc = counts.div(counts.sum(axis=1), axis=0) * 100
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5))
+    x_counts = np.arange(len(bucket_counts.index))
+    ax1.bar(x_counts, bucket_counts.values, color='#74C0FC')
+    ax1.set_title('수술 카테고리별 사망자 수', fontsize=13, fontweight='bold')
+    ax1.set_xlabel('수술 카테고리')
+    ax1.set_ylabel('사망자 수')
+    ax1.set_xticks(x_counts)
+    ax1.set_xticklabels(bucket_counts.index, rotation=40, ha='right')
+    for idx, val in enumerate(bucket_counts.values):
+        ax1.text(
+            x_counts[idx],
+            val + max(1, 0.01 * bucket_counts.max()),
+            f'{int(val):,}',
+            ha='center',
+            va='bottom',
+            fontsize=9
+        )
+    ax1.set_axisbelow(True)
+    ax1.grid(axis='y', linestyle='--', alpha=0.3)
+
+    bottom = np.zeros(len(perc))
+    x = np.arange(len(perc.index))
+    for target in counts.columns:
+        values = perc[target].to_numpy()
+        ax2.bar(
+            x,
+            values,
+            bottom=bottom,
+            color=_TARGET_LABEL_PALETTE.get(target, '#999999'),
+            label=_TARGET_LABEL_KOR.get(target, str(target))
+        )
+        bottom += values
+    for idx, (bucket, total) in enumerate(counts.sum(axis=1).items()):
+        ax2.text(
+            x[idx],
+            100.5,
+            f'n={int(total):,}',
+            ha='center',
+            va='bottom',
+            fontsize=9
+        )
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(perc.index, rotation=40, ha='right')
+    ax2.set_ylim(0, 108)
+    ax2.set_ylabel('구성비(%)')
+    ax2.set_title('수술 카테고리별 target_label 구성비 (사망 클래스)', fontsize=13, fontweight='bold')
+    ax2.legend(
+        [plt.Rectangle((0, 0), 1, 1, color=_TARGET_LABEL_PALETTE.get(lbl, '#999999')) for lbl in counts.columns],
+        [_TARGET_LABEL_KOR.get(lbl, str(lbl)) for lbl in counts.columns],
+        title='target_label',
+        bbox_to_anchor=(1.02, 1),
+        loc='upper left'
+    )
+    ax2.text(
+        0.98,
+        0.02,
+        '수술 코드군은 SEER primary surgery 코드를\n대략적인 범주(국소, 부분, 광범위 등)로 묶었습니다.',
+        transform=ax2.transAxes,
+        ha='right',
+        va='bottom',
+        fontsize=9,
+        bbox=dict(boxstyle='round,pad=0.4', facecolor='white', alpha=0.8)
+    )
+    plt.tight_layout()
+    plt.show()
+
+
 def _plot_target_extras(encoded_cod_df):
     # [타깃 분포] 노트북 셀 24: target_label 카운트만 출력
     if 'target_label' not in encoded_cod_df.columns:
@@ -1311,33 +1652,6 @@ def _plot_gender_age_event(encoded_cod_df):
         ax2.set_title('연령대별 사건 확률 P(target_label != -1)', fontsize=12, fontweight='bold'); ax2.set_xlabel('연령대'); ax2.set_ylabel('확률(%)'); ax2.grid(True, alpha=0.3)
     plt.tight_layout(); plt.show()
 
-    # 성별×연령 사건 확률 히트맵
-    if not np.issubdtype(df_t['target_label'].dtype, np.number):
-        df_t['target_label'] = pd.to_numeric(df_t['target_label'], errors='coerce')
-    pivot = df_t.groupby(['Sex', age_col])['target_label'].apply(lambda x: (x != -1).mean() * 100).unstack()
-    if np.issubdtype(pivot.columns.dtype, np.number):
-        present_codes = [c for c in range(len(DataModify.DataPreprocessing.AGE_RECODE_ORDER)) if c in pivot.columns]
-        pivot = pivot.reindex(columns=present_codes) if present_codes else pivot
-        x_labels = [age_kor_map.get(DataModify.DataPreprocessing.AGE_RECODE_ORDER[int(c)], str(c)) for c in pivot.columns]
-    else:
-        present = [a for a in DataModify.DataPreprocessing.AGE_RECODE_ORDER if a in pivot.columns]
-        pivot = pivot.reindex(columns=present) if present else pivot
-        x_labels = [age_kor_map.get(a, a) for a in pivot.columns]
-    plt.figure(figsize=(12,3.8))
-    pivot = pivot.fillna(0)
-    im = sns.heatmap(pivot, cmap='RdYlGn_r', vmin=0, vmax=100, cbar=True, linewidths=0.5, linecolor='white')
-    y_labels_map = {'Female':'여성','Male':'남성',0:'여성',1:'남성'}
-    if np.issubdtype(pivot.index.dtype, np.number) and len(pivot.index.unique()) == 2:
-        idx_sorted = sorted(pivot.index.tolist())
-        y_tick = [('여성' if i == idx_sorted[0] else '남성') for i in pivot.index]
-        im.set_yticklabels(y_tick)
-    else:
-        im.set_yticklabels([y_labels_map.get(i, i) for i in pivot.index])
-    im.set_xticklabels(x_labels, rotation=45, ha='center')
-    plt.title('성별-연령대별 사건 확률 (P(target_label != -1))', fontsize=13, fontweight='bold')
-    plt.xlabel('연령대'); plt.ylabel('성별')
-    plt.tight_layout(); plt.show()
-
 
 def _plot_yearly_event_and_classes(encoded_cod_df):
     # [연도별 추이] 사건확률 변화(라인+추세선) + 연도별 사망 클래스(0/1/2/3) 구성비 변화
@@ -1414,6 +1728,9 @@ def show_graph(df) :
     _plot_stage_surgery_gender_age(encoded_cod_df)   # 병기/수술/성별×연령 교차 시각화(생존율)
     _plot_key_corr_and_impacts(encoded_cod_df)       # 상관행렬/영향도/연도 지표/요약
     _plot_cod_top_and_age_pattern(encoded_cod_df)    # COD Top15 + 연령대별 Top5 스택
+    _plot_target_label_by_gender(encoded_cod_df)     # target_label 다중 분포 - 성별
+    _plot_target_label_by_stage(encoded_cod_df)      # target_label 다중 분포 - 병기
+    _plot_target_label_by_surgery(encoded_cod_df)    # target_label 다중 분포 - 수술 카테고리
     _plot_target_extras(encoded_cod_df)              # 타깃 분포
     _plot_gender_age_event(encoded_cod_df)           # 성별/연령 분석(사건확률)
     _plot_yearly_event_and_classes(encoded_cod_df)   # 연도별 사건확률 및 클래스 변화
