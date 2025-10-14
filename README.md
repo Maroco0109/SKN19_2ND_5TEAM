@@ -156,17 +156,25 @@ TEAMPROJECT/
 ## 5. **데이터 전처리 및 EDA**
 ___
 
-<div align="center">
+### [ 데이터 기본 정보 분석 ] 
   <img src="./insight/img/plot_basic_distributions.png" width="100%" />
+  
+
+### [ 사망 원인 및 상관관계 분석 ] 
   <img src="./insight/img/plot_cod_top_and_age_pattern.png" width="100%" />
   <img src="./insight/img/plot_corr_with_target.png" width="100%" /> 
    <img src="./insight/img/plot_key_corr_and_impacts.png" width="100%" />
    <img src="./insight/img/plot_site_survival_year.png" width="100%" />
    <img src="./insight/img/plot_stage_surgery_gender_age.png" width="100%" />
+  <img src="./insight/img/plot_yearly_event_and_classes.png" width="100%" /> 
    <img src="./insight/img/plot_survival_months.png" width="100%" />
-    <img src="./insight/img/plot_target_extras.png" width="100%" />
-    <img src="./insight/img/plot_yearly_event_and_classes.png" width="100%" />
-</div>
+    
+   
+### [ 타겟 레이블 상관관계 분석 ]  
+  <img src="./insight/img/plot_target_extras.png" width="100%" />
+    <img src="./insight/img/plot_target_label_by_surgery.png" width="100%" />
+     <img src="./insight/img/plot_target_label_by_gender.png" width="100%" />
+     <img src="./insight/img/figure.png" width="100%" />
 
 ## 6. **인공지능 학습 결과서**
 ---
