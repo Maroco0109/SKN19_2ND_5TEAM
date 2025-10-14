@@ -154,8 +154,20 @@ TEAMPROJECT/
 ---
 
 ## 5. **데이터 전처리 및 EDA**
-___
-
+### [데이터 전처리]
+```modules/DataModify.py```
+---------------------
+```
+DataPreprocessing
+├─ category_encoding(): 범주형 컬럼을 라벨/원-핫 인코딩하며, 기존 매핑을 유지해 재현 가능한 카테고리 ID를 보장.
+├─ decode_csv_features(): 인코딩된 컬럼을 다시 디코딩 하여 범주형 변수를 모델에 적용할 수 있도록 디코딩.
+├─ encode_ordinal_columns(): 정의된 순서(또는 수치 그대로 유지)를 적용해 순서형 변수 일관성을 유지. Age Group 과 같은 수치형이지만, 구간이 존재하는 데이터를 오름차순으로 매핑
+├─ encode_nominal_columns(): 명목형 변수(순서가 없는 범주형 변수) 전체를 새 ID로 팩터라이즈하고 결측은 -1로 통일.
+├─ create_combined_label(): 생존 상태·사망원인을 조합해 `target_label` 다중 클래스를 구축
+├─ bin_survival_months(): 생존 개월을 3개월 단위 등 균일 구간으로 나눠 시간 기반 특징 강화. 90 이상(270개월 이상)의 값은 표본수가 적어서 90으로 처리.
+└─ _normalize_seer_summary_stage(): 확장 병기 코드를 0/1/2/3/9 표준 범주로 정규화.
+```
+---
 ### [ 데이터 기본 정보 분석 ] 
   <img src="./insight/img/plot_basic_distributions.png" width="100%" />
   
