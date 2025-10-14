@@ -10,23 +10,23 @@
 <table>
   <tr>
     <td align="center" width="200px">
-      <img src="" width="120px" height="120px" alt="박준영" style="border-radius: 50%;"><br/>
+      <img src="./public/1.png" width="120px" height="120px" alt="박준영" style="border-radius: 50%;"><br/>
       <b>박준영</b>
     </td>
     <td align="center" width="200px">
-      <img src="" width="120px" height="120px" alt="강지완" style="border-radius: 50%;"><br/>
+      <img src="./public/3.png" width="120px" height="120px" alt="강지완" style="border-radius: 50%;"><br/>
       <b>강지완</b>
     </td>
     <td align="center" width="200px">
-      <img src="" width="120px" height="120px" alt="김민정" style="border-radius: 50%;"><br/>
+      <img src="./public/2.png" width="120px" height="120px" alt="김민정" style="border-radius: 50%;"><br/>
       <b>김민정</b>
     </td>
     <td align="center" width="200px">
-      <img src="" width="120px" height="120px" alt="이승원" style="border-radius: 50%;"><br/>
+      <img src="./public/4.png" width="120px" height="120px" alt="이승원" style="border-radius: 50%;"><br/>
       <b>이승원</b>
     </td>
    <td align="center" width="200px">
-      <img src="" width="120px" height="120px" alt="박소희" style="border-radius: 50%;"><br/>
+      <img src="./public/5.png" width="120px" height="120px" alt="박소희" style="border-radius: 50%;"><br/>
       <b>박소희</b>
     </td>
   </tr>
