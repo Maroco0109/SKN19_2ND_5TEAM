@@ -1,0 +1,90 @@
+# Train Notebook Model Parameters
+
+- **Batch**
+  - `batch_size`: 64
+- **Model (`model_cfg`)**
+  - `hidden_size`: (128, 64)
+  - `dropout`: 0.2
+  - `se_ratio`: 0.25
+  - `conv_channels`: (8, 16)
+  - `conv_kernel_sizes`: ((2, 5), (2, 3))
+  - `conv_padding`: ((1, 2), (0, 1))
+  - `use_conv_batchnorm`: False
+- **Optimizer (`optim_cfg`)**
+  - `lr`: 1e-3
+  - `weight_decay`: 1e-5
+  - `betas`: (0.9, 0.98)
+- **Scheduler (`scheduler_cfg`)**
+  - `factor`: 0.5
+  - `patience`: 3
+  - `min_lr`: 1e-5
+- **Loss (`loss_cfg`)**
+  - `alpha`: 0.5
+  - `margin`: 0.05
+- **Training (`training_cfg`)**
+  - `epochs`: 20
+  - `grad_clip`: 1.0
+- **Result (`accuracy_test.ipynb`)**
+  - `C-index`: 0.8695
+  - `IBS`: 0.2154
+  - `MAE`: 5.9225
+
+## 2025-10-14 18:54
+- **Source**
+  - `train.ipynb`
+- **Model (`model_cfg`)**
+  - `hidden_size`: (128, 64)
+  - `dropout`: 0.2
+  - `se_ratio`: 0.25
+  - `conv_channels`: (8, 16)
+  - `conv_kernel_sizes`: ((2, 5), (2, 3))
+  - `conv_padding`: ((1, 2), (0, 1))
+  - `use_conv_batchnorm`: False
+- **Optimizer (`optim_cfg`)**
+  - `lr`: 1e-3
+  - `weight_decay`: 1e-5
+  - `betas`: (0.9, 0.98)
+- **Scheduler (`scheduler_cfg`)**
+  - `factor`: 0.5
+  - `patience`: 3
+  - `min_lr`: 1e-5
+- **Loss (`loss_cfg`)**
+  - `alpha`: 0.5
+  - `margin`: 0.05
+- **Training (`training_cfg`)**
+  - `epochs`: 20
+  - `grad_clip`: 1.0
+- **Result (`accuracy_test.ipynb`)**
+  - `C-index`: 0.8136
+  - `IBS`: 0.3298
+  - `MAE`: 14.2928
+
+## 2025-10-14 19:36
+- **Source**
+  - `train.ipynb`
+- **Model (`model_cfg`)**
+  - `hidden_size`: (128, 64)
+  - `dropout`: 0.25
+  - `se_ratio`: 0.25
+  - `conv_channels`: (8, 16)
+  - `conv_kernel_sizes`: ((2, 5), (2, 3))
+  - `conv_padding`: ((1, 2), (0, 1))
+  - `use_conv_batchnorm`: True
+- **Optimizer (`optim_cfg`)**
+  - `lr`: 8e-5
+  - `weight_decay`: 1e-5
+  - `betas`: (0.9, 0.98)
+- **Scheduler (`scheduler_cfg`)**
+  - `factor`: 0.5
+  - `patience`: 3
+  - `min_lr`: 1e-5
+- **Loss (`loss_cfg`)**
+  - `alpha`: 0.4
+  - `margin`: 0.05
+- **Training (`training_cfg`)**
+  - `epochs`: 20
+  - `grad_clip`: 1.0
+- **Result (`accuracy_test.ipynb`)**
+  - `C-index`: 0.9144
+  - `IBS`: 0.1638
+  - `MAE`: 5.3622
