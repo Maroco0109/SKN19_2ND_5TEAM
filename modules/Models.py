@@ -343,8 +343,19 @@ class DeepHitSurvWithSEBlockCNN(nn.Module):
 
 # 2D CNN을 추가한 Deephit 모델
 class DeepHitSurvWithSEBlockAnd2DCNN(nn.Module):
-    def __init__(self, input_dim, hidden_size=(128, 64),
-                 time_bins=91, num_events=4, dropout=0.2, se_ratio=0.25):
+    def __init__(
+        self,
+        input_dim,
+        hidden_size=(128, 64),
+        time_bins=91,
+        num_events=4,
+        dropout=0.2,
+        se_ratio=0.25,
+        conv_channels=(8, 16),
+        conv_kernel_sizes=((2, 5), (2, 3)),
+        conv_padding=((1, 2), (0, 1)),
+        use_conv_batchnorm=False,
+    ):
         super().__init__()
         h1, h2 = hidden_size
         self.num_events = num_events
@@ -387,13 +398,31 @@ class DeepHitSurvWithSEBlockAnd2DCNN(nn.Module):
         ])
 
         # ----- [5] 2D CNN block (시간/사건 상관관계 학습) -----
-        self.conv2d_block = nn.Sequential(
-            nn.Conv2d(1, 8, kernel_size=(2, 5), padding=(1, 2)),  # 사건×시간 local pattern
+        if len(conv_channels) != 2:
+            raise ValueError("conv_channels must be a tuple of length 2, e.g., (8, 16)")
+        if len(conv_kernel_sizes) != 2:
+            raise ValueError("conv_kernel_sizes must be a tuple of length 2")
+        if conv_padding is None:
+            conv_padding = tuple((k[0] // 2, k[1] // 2) for k in conv_kernel_sizes)
+        if len(conv_padding) != 2:
+            raise ValueError("conv_padding must be None or a tuple of length 2")
+
+        conv_layers = [
+            nn.Conv2d(1, conv_channels[0], kernel_size=conv_kernel_sizes[0], padding=conv_padding[0]),
+        ]
+        if use_conv_batchnorm:
+            conv_layers.append(nn.BatchNorm2d(conv_channels[0]))
+        conv_layers.extend([
             nn.ReLU(),
-            nn.Conv2d(8, 16, kernel_size=(2, 3), padding=(0, 1)),
+            nn.Conv2d(conv_channels[0], conv_channels[1], kernel_size=conv_kernel_sizes[1], padding=conv_padding[1]),
+        ])
+        if use_conv_batchnorm:
+            conv_layers.append(nn.BatchNorm2d(conv_channels[1]))
+        conv_layers.extend([
             nn.ReLU(),
-            nn.Conv2d(16, 1, kernel_size=1),  # 다시 channel=1로 축소
-        )
+            nn.Conv2d(conv_channels[1], 1, kernel_size=1),  # 다시 channel=1로 축소
+        ])
+        self.conv2d_block = nn.Sequential(*conv_layers)
 
     def forward(self, x):
         # ----- [1] 입력 SEBlock -----
@@ -612,6 +641,5 @@ def set_seed(seed = 42) :
     # CuDNN 비결정적 동작 방지 (연산 재현성 확보)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-
 
 

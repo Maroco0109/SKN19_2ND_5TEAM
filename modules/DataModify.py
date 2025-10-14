@@ -466,7 +466,11 @@ class CancerDataset(Dataset) :
         self.transform = transform
 
         if self.transform is not None:
-            df = self.transform(df)
+            transformed = self.transform(df)
+            if isinstance(transformed, tuple):
+                df = transformed[0]
+            else:
+                df = transformed
 
         self.time = df[time_column].values.astype(int) if time_column else None
         self.target = df[target_column].values.astype(int) if target_column else None

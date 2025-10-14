@@ -275,8 +275,8 @@ def map_primary_site_code_to_korean(code) -> str:
         # 소장(C17.x)
         170: '소장', 171: '십이지장', 172: '공장', 173: '회장', 178: '소장-중첩병변', 179: '소장, 기타불명',
         # 대장(C18.x)
-        180: '맹장', 181: '충수', 182: '상행결장', 183: '간만곡', 184: '횡행결장', 185: '비만곡', 186: '하행결장',
-        187: '에스상결장', 188: '대장-중첩병변', 189: '대장, 기타불명',
+        180: '맹장', 181: '맹장-충수', 182: '대장-상행결장', 183: '대장-간만곡', 184: '대장-횡행결장', 185: '대장-비만곡', 186: '대장-하행결장',
+        187: '대장-에스상결장', 188: '대장-중첩병변', 189: '대장, 기타불명',
         # 직장구불/직장(C19–20)
         190: '직장구불결장 이행부', 200: '직장',
         # 항문(C21.x)
@@ -694,15 +694,15 @@ def _plot_site_survival_year(encoded_cod_df):
     # (부위) 한글 매핑 및 헬퍼
     site_korean_mapping = {
         'Lung and Bronchus': '폐 및 기관지','Breast': '유방','Prostate': '전립선','Stomach': '위','Liver': '간','Pancreas': '췌장','Esophagus': '식도','Ovary': '난소',
-        'Kidney and Renal Pelvis': '신장 및 신우','Urinary Bladder': '방광','Rectum': '직장','Rectosigmoid Junction': '직장구불결장 이행부',
-        'Ascending Colon': '상행결장','Sigmoid Colon': '에스상결장','Transverse Colon': '횡행결장','Descending Colon': '하행결장',
+        'Kidney and Renal Pelvis': '신장 및 신우','Urinary Bladder': '방광','Rectum': '직장','Rectosigmoid Junction': '대장-직장구불결장 이행부',
+        'Ascending Colon': '대장-상행결장','Sigmoid Colon': '대장-에스상결장','Transverse Colon': '대장-횡행결장','Descending Colon': '대장-하행결장',
         'Cecum': '맹장','Large Intestine, NOS': '대장, 기타불명','Thyroid': '갑상선','Brain': '뇌','Melanoma of the Skin': '피부 흑색종',
         'NHL - Nodal': '비호지킨림프종 - 림프절','NHL - Extranodal': '비호지킨림프종 - 림프절외','Hodgkin - Nodal': '호지킨림프종 - 림프절','Hodgkin - Extranodal': '호지킨림프종 - 림프절외',
         'Cranial Nerves Other Nervous System': '뇌신경 및 기타 신경계','Gum and Other Mouth': '치은 및 기타 구강','Tongue': '혀','Tonsil': '편도',
         'Larynx': '후두','Nasopharynx': '비인두','Oropharynx': '구인두','Hypopharynx': '하인두','Nose, Nasal Cavity and Middle Ear': '코/비강/중이',
         'Eye and Orbit': '눈 및 안와','Soft Tissue including Heart': '연조직(심장 포함)','Bones and Joints': '뼈 및 관절','Salivary Gland': '타액선',
         'Uterus, NOS': '자궁, 기타불명','Cervix Uteri': '자궁경부','Corpus Uteri': '자궁체부','Vagina': '질','Vulva': '외음부','Penis': '음경','Testis': '고환',
-        'Gallbladder': '담낭','Intrahepatic Bile Duct': '간내 담관','Other Biliary': '기타 담도','Small Intestine': '소장','Appendix': '충수',
+        'Gallbladder': '담낭','Intrahepatic Bile Duct': '간내 담관','Other Biliary': '기타 담도','Small Intestine': '소장','Appendix': '맹장-충수',
         'Peritoneum, Omentum and Mesentery': '복막/망/장간막','Retroperitoneum': '후복막',
         'Trachea, Mediastinum and Other Respiratory Organs': '기관/종격동/기타 호흡기관',
     }
@@ -732,7 +732,7 @@ def _plot_site_survival_year(encoded_cod_df):
             0: '입술',
             1: '혀', 2: '혀', 3: '치은', 4: '구강저', 5: '구개', 6: '기타 구강',
             7: '타액선', 8: '타액선', 9: '편도', 10: '구인두', 11: '비인두', 12: '하인두', 13: '하인두', 14: '기타 구강/인두',
-            15: '식도', 16: '위', 17: '소장', 18: '대장', 19: '직장구불결장 이행부', 20: '직장', 21: '항문 및 항문관',
+            15: '식도', 16: '위', 17: '소장', 18: '대장', 19: '대장-직장구불결장 이행부', 20: '직장', 21: '항문 및 항문관',
             22: '간 및 간내 담관', 23: '담낭', 24: '기타 담도', 25: '췌장', 26: '기타 소화기관',
             30: '코/비강/중이', 31: '부비동', 32: '후두', 33: '기관', 34: '폐 및 기관지',
             37: '흉선', 38: '심장/종격동/흉막', 39: '기타 호흡/흉강 장기',
