@@ -98,7 +98,7 @@
 | :---------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 |      **WEB**      |                                                                                                                                                 <img src="https://img.shields.io/badge/Streamlit-%23FE4B4B.svg?style=for-the-badge&logo=streamlit&logoColor=white" alt="Streamlit" width="120"/>                                                                                                                                                |
 |     **라이브러리**     |     <img src="https://img.shields.io/badge/pandas-%23150458.svg?style=for-the-badge&logo=pandas&logoColor=white" alt="Pandas" width="120"/> <img src="https://img.shields.io/badge/Matplotlib-%23ffffff.svg?style=for-the-badge&logo=Matplotlib&logoColor=black" alt="matplotlib" width="120" /> <img src="https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white" alt="Pytorch" width="120" />    |
-| **개발 환경 및 협업 도구** | <img src="https://img.shields.io/badge/GitBook-%23000000.svg?style=for-the-badge&logo=gitbook&logoColor=white" alt="Git" width="120"/> <img src="https://img.shields.io/badge/Visual%20Studio%20Code-0078d7.svg?style=for-the-badge&logo=visual-studio-code&logoColor=white" alt="VSCode" width="120"/> <img src="https://img.shields.io/badge/Notion-%23000000.svg?style=for-the-badge&logo=notion&logoColor=white" alt="Notion" width="120"/> |
+| **개발 환경 및 협업 도구** | <img src="https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white" alt="Git" width="120"/> <img src="https://img.shields.io/badge/Visual%20Studio%20Code-0078d7.svg?style=for-the-badge&logo=visual-studio-code&logoColor=white" alt="VSCode" width="120"/> <img src="https://img.shields.io/badge/Notion-%23000000.svg?style=for-the-badge&logo=notion&logoColor=white" alt="Notion" width="120"/> |
 
 
 ## 3-2. **파일 구조**
@@ -267,22 +267,6 @@ TEAMPROJECT/
   </tr>
 </table>
 
-### **하이퍼파라미터 튜닝 및 학습 최적화**
-기본 파라미터로 학습하였을 때, 가장 좋은 성능을 보인 모델에 대해서 하이퍼 파라미터 튜닝과 학습 최적화를 진행
-#### **학습 최적화 결과**
-Batch Normalization + 스케줄러를 이용한 학습 최적화 결과
-
-<table>
-  <tr>
-    <th>Concordance Index (C-index)</th>
-    <th>Integrated Brier Score (IBS)</th>
-    <th>MAE of predicted time</th>
-  </tr>
-  <tr>
-    <td>0.9144</td><td>0.1638</td><td>5.3622</td>
-  </tr>
-</table>
-
 
 ### 6-3. 최종 모델 형태
 
@@ -304,6 +288,22 @@ Batch Normalization + 스케줄러를 이용한 학습 최적화 결과
 
 모델을 통해 얻은 시간대별 사건 발생 확률(pmf)에 대한 가중치합을 계산한 후 Sigmoid를 통하여 0~100점 사이의 점수로 변환    
 가까운 시일 내에 사망할 확률이 높을 수록 높은 위험점수를 나타냄
+
+### 6-5. 하이퍼파라미터 튜닝 및 학습 최적화
+기본 파라미터로 학습하였을 때, 가장 좋은 성능을 보인 모델에 대해서 하이퍼 파라미터 튜닝과 학습 최적화를 진행
+#### **학습 최적화 결과**
+Batch Normalization + 스케줄러를 이용한 학습 최적화 결과
+
+<table>
+  <tr>
+    <th>Concordance Index (C-index)</th>
+    <th>Integrated Brier Score (IBS)</th>
+    <th>MAE of predicted time</th>
+  </tr>
+  <tr>
+    <td>0.9144</td><td>0.1638</td><td>5.3622</td>
+  </tr>
+</table>
 
 
 ## 7. **수행 결과**
