@@ -10,23 +10,23 @@
 <table>
   <tr>
     <td align="center" width="200px">
-      <img src="" width="120px" height="120px" alt="박준영" style="border-radius: 50%;"><br/>
+      <img src="./public/1.png" width="120px" height="120px" alt="박준영" style="border-radius: 50%;"><br/>
       <b>박준영</b>
     </td>
     <td align="center" width="200px">
-      <img src="" width="120px" height="120px" alt="강지완" style="border-radius: 50%;"><br/>
+      <img src="./public/3.png" width="120px" height="120px" alt="강지완" style="border-radius: 50%;"><br/>
       <b>강지완</b>
     </td>
     <td align="center" width="200px">
-      <img src="" width="120px" height="120px" alt="김민정" style="border-radius: 50%;"><br/>
+      <img src="./public/2.png" width="120px" height="120px" alt="김민정" style="border-radius: 50%;"><br/>
       <b>김민정</b>
     </td>
     <td align="center" width="200px">
-      <img src="" width="120px" height="120px" alt="이승원" style="border-radius: 50%;"><br/>
+      <img src="./public/4.png" width="120px" height="120px" alt="이승원" style="border-radius: 50%;"><br/>
       <b>이승원</b>
     </td>
    <td align="center" width="200px">
-      <img src="" width="120px" height="120px" alt="박소희" style="border-radius: 50%;"><br/>
+      <img src="./public/5.png" width="120px" height="120px" alt="박소희" style="border-radius: 50%;"><br/>
       <b>박소희</b>
     </td>
   </tr>
@@ -154,8 +154,20 @@ TEAMPROJECT/
 ---
 
 ## 5. **데이터 전처리 및 EDA**
-___
-
+### [데이터 전처리]
+```modules/DataModify.py```
+---------------------
+```python
+# DataPreprocessing
+├─ category_encoding()                # 범주형 컬럼을 라벨/원-핫 인코딩
+├─ decode_csv_features()              # 범주형 변수를 모델에 적용할 수 있도록 디코딩
+├─ encode_ordinal_columns()           # 정의된 순서(또는 수치 그대로 유지)를 적용해 순서형 변수 일관성을 유지
+├─ encode_nominal_columns()           # 명목형 변수(순서가 없는 범주형 변수) 전체를 새 ID로 팩터라이즈하고 결측은 -1로 통일
+├─ create_combined_label()            # 생존 상태·사망원인을 조합해 `target_label` 다중 클래스를 구축
+├─ bin_survival_months()              # 생존 개월을 3개월 단위 등 균일 구간으로 나눠 시간 기반 특징 강화
+└─ _normalize_seer_summary_stage()    # 확장 병기 코드를 0/1/2/3/9 표준 범주로 정규화
+```
+---
 ### [ 데이터 기본 정보 분석 ] 
   <img src="./insight/img/plot_basic_distributions.png" width="100%" />
   

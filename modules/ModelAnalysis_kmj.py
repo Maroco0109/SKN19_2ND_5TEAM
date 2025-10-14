@@ -17,6 +17,49 @@ import torch
 from modules.Models import compute_risk_score_sigmoid
 
 
+def show_risk_level_with_emoji(risk_score):
+    """
+    위험도 점수에 따라 이모티콘과 메시지 표시
+
+    Args:
+        risk_score: 0~1 사이의 위험도 점수
+    """
+    if risk_score < 0.3:
+        emoji = "😊"
+        level = "낮음"
+        color = "#28a745"
+        bg_color = "#d4edda"
+    elif risk_score < 0.6:
+        emoji = "😐"
+        level = "보통"
+        color = "#ffc107"
+        bg_color = "#fff3cd"
+    elif risk_score < 0.8:
+        emoji = "😰"
+        level = "높음"
+        color = "#fd7e14"
+        bg_color = "#ffe5d0"
+    else:
+        emoji = "😱"
+        level = "매우 높음"
+        color = "#dc3545"
+        bg_color = "#f8d7da"
+
+    # 전체 위험도 표시
+    st.markdown(
+        f"""
+        <div style="text-align: center; padding: 30px; margin: 20px 0;
+                    background-color: {bg_color}; 
+                    border-radius: 15px; border: 3px solid {color};">
+            <div style="font-size: 60px; margin-bottom: 10px;">{emoji}</div>
+            <h2 style="color: {color}; margin: 10px 0;">종합 위험도: {level}</h2>
+            <h3 style="color: {color};">위험도 점수: {risk_score:.1%}</h3>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def predict_event_probabilities(
     input_df: pd.DataFrame,
     model,
@@ -160,8 +203,12 @@ def visualize_single_prediction(
     risk_score = compute_risk_score_sigmoid(
         pmf, time_lambda=time_lambda, event_weights=event_weights
     )
-    st.subheader("⚠️ 위험 점수 (Risk Score)")
-    st.write(f"{risk_score.item():.2f} / 100")
+
+    # 위험도 점수를 0-1 범위로 정규화 (100점 만점을 1.0으로 변환)
+    normalized_risk = risk_score.item() / 100.0
+
+    # run_kmj.py의 이모티콘 표시 함수 적용
+    show_risk_level_with_emoji(normalized_risk)
 
     return pred_time
 
