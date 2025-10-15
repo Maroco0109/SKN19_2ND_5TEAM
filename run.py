@@ -48,7 +48,7 @@ def comparison_chart(pred_time, time_val):
                    range=[-3, max(pred_point, real_point) + 15],
                    showgrid=True, gridcolor="lightgrey"),
         height=550, plot_bgcolor="white", margin=dict(t=80),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color="black")))
     return fig
 
 # ===== 모듈 임포트 =====
@@ -311,6 +311,39 @@ with tab1:
                 selected_values[col] = st.selectbox(f"{emoji} {col} 선택", vals)
         st.markdown("---")
         predict_button = st.button("예측 실행 🔮", key="main_predict", use_container_width=True)
+
+        with st.expander("🔑 특성 번역 사전"):
+            ui_card("""
+            <table style='width:100%; border-collapse:collapse; font-size:0.95rem;'>
+                <tr><td><b>Sex</b></td><td>성별</td></tr>
+                <tr><td><b>Age recode with &lt;1 year olds and 90+</b></td><td>연령대</td></tr>
+                <tr><td><b>Year of diagnosis</b></td><td>진단 연도</td></tr>
+                <tr><td><b>Year of follow-up recode</b></td><td>추적 연도</td></tr>
+                <tr><td><b>Race recode (W, B, AI, API)</b></td><td>인종 재코드</td></tr>
+                <tr><td><b>Site recode ICD-O-3/WHO 2008</b></td><td>암 부위 재코드</td></tr>
+                <tr><td><b>Primary Site</b></td><td>원발 부위</td></tr>
+                <tr><td><b>Primary Site - labeled</b></td><td>원발 부위 라벨</td></tr>
+                <tr><td><b>Derived Summary Grade 2018 (2018+)</b></td><td>요약 등급 2018</td></tr>
+                <tr><td><b>Laterality</b></td><td>좌우 구분</td></tr>
+                <tr><td><b>EOD Schema ID Recode (2010+)</b></td><td>EOD 스키마 재코드</td></tr>
+                <tr><td><b>Combined Summary Stage with Expanded Regional Codes (2004+)</b></td><td>SEER 요약 병기(확장)</td></tr>
+                <tr><td><b>RX Summ--Surg Prim Site (1998+)</b></td><td>수술 코드</td></tr>
+                <tr><td><b>RX Summ--Scope Reg LN Sur (2003+)</b></td><td>림프절 절제 범위</td></tr>
+                <tr><td><b>RX Summ--Surg Oth Reg/Dis (2003+)</b></td><td>기타 수술</td></tr>
+                <tr><td><b>Sequence number</b></td><td>순서 번호</td></tr>
+                <tr><td><b>Median household income inflation adj to 2023</b></td><td>가구 소득(2023 물가보정)</td></tr>
+                <tr><td><b>Number of Cores Positive Recode (2010+)</b></td><td>양성 코어 수</td></tr>
+                <tr><td><b>Number of Cores Examined Recode (2010+)</b></td><td>검사 코어 수</td></tr>
+                <tr><td><b>EOD Primary Tumor Recode (2018+)</b></td><td>EOD 원발 종양</td></tr>
+                <tr><td><b>PRCDA 2020</b></td><td>PRCDA 2020</td></tr>
+                <tr><td><b>Survival months</b></td><td>생존 개월</td></tr>
+                <tr><td><b>Survival months_bin_3m</b></td><td>생존 개월(3개월 구간)</td></tr>
+                <tr><td><b>target_label</b></td><td>타깃 라벨</td></tr>
+                <tr><td><b>Vital status recode (study cutoff used)__enc</b></td><td>생존 상태(인코딩)</td></tr>
+            </table>
+            """)
+
+
     with col_right:
         if not predict_button:
             ui_card("👈 왼쪽에서 환자 정보를 입력하고 예측 실행 버튼을 클릭하세요!")
