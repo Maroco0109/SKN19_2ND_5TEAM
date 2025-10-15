@@ -94,10 +94,10 @@
 ## 3-1. **기술 스택**
 
 
-|      **카테고리**     |                                                                                                                                                                                                                    **기술 스택**                                                                                                                                                                                                                    |
-| :---------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|      **WEB**      |                                                                                                                                                 <img src="https://img.shields.io/badge/Streamlit-%23FE4B4B.svg?style=for-the-badge&logo=streamlit&logoColor=white" alt="Streamlit" width="120"/>                                                                                                                                                |
-|     **라이브러리**     |     <img src="https://img.shields.io/badge/pandas-%23150458.svg?style=for-the-badge&logo=pandas&logoColor=white" alt="Pandas" width="120"/> <img src="https://img.shields.io/badge/Matplotlib-%23ffffff.svg?style=for-the-badge&logo=Matplotlib&logoColor=black" alt="matplotlib" width="120" /> <img src="https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white" alt="Pytorch" width="120" /> <img src="https://img.shields.io/badge/Plotly-%233F4F75.svg?style=for-the-badge&logo=plotly&logoColor=white" alt="Plotly" width="120"/> <img src="https://img.shields.io/badge/numpy-%23013243.svg?style=for-the-badge&logo=numpy&logoColor=white" alt="Numpy" width="120"/>   |
+| **카테고리** | **기술스택** |
+| :--- | :--- |
+| **WEB** | <img src="https://img.shields.io/badge/Streamlit-%23FE4B4B.svg?style=for-the-badge&logo=streamlit&logoColor=white" alt="Streamlit" width="120"/> |
+| **라이브러리** | <img src="https://img.shields.io/badge/pandas-%23150458.svg?style=for-the-badge&logo=pandas&logoColor=white" alt="Pandas" width="120"/> <img src="https://img.shields.io/badge/Matplotlib-%23ffffff.svg?style=for-the-badge&logo=Matplotlib&logoColor=black" alt="matplotlib" width="120"/> <img src="https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white" alt="Pytorch" width="120"/> <img src="https://img.shields.io/badge/Plotly-%233F4F75.svg?style=for-the-badge&logo=plotly&logoColor=white" alt="Plotly" width="120"/> <img src="https://img.shields.io/badge/numpy-%23013243.svg?style=for-the-badge&logo=numpy&logoColor=white" alt="Numpy" width="120"/> |
 | **개발 환경 및 협업 도구** | <img src="https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white" alt="Git" width="120"/> <img src="https://img.shields.io/badge/Visual%20Studio%20Code-0078d7.svg?style=for-the-badge&logo=visual-studio-code&logoColor=white" alt="VSCode" width="120"/> <img src="https://img.shields.io/badge/Notion-%23000000.svg?style=for-the-badge&logo=notion&logoColor=white" alt="Notion" width="120"/> |
 
 
@@ -203,12 +203,12 @@ TEAMPROJECT/
   <tr><td><b>Age recode with &lt;1 year olds and 90+</b></td><td>연령대</td></tr>
   <tr><td><b>Year of diagnosis</b></td><td>진단 연도</td></tr>
   <tr><td><b>Race recode (W, B, AI, API)</b></td><td>인종 재코드</td></tr>
-  <tr><td><b>Primary Site</b></td><td>원발 부위</td></tr>
-  <tr><td><b>Primary Site - labeled</b></td><td>원발 부위 라벨</td></tr>
-  <tr><td><b>Derived Summary Grade 2018 (2018+)</b></td><td>요약 등급 2018</td></tr>
-  <tr><td><b>Laterality</b></td><td>좌우 구분</td></tr>
-  <tr><td><b>EOD Schema ID Recode (2010+)</b></td><td>EOD 스키마 재코드</td></tr>
-  <tr><td><b>Combined Summary Stage with Expanded Regional Codes (2004+)</b></td><td>SEER 요약 병기(확장)</td></tr>
+  <tr><td><b>Primary Site</b></td><td>암 발생 부위</td></tr>
+  <tr><td><b>Primary Site - labeled</b></td><td>암 발생 부위 라벨</td></tr>
+  <tr><td><b>Derived Summary Grade 2018 (2018+)</b></td><td>암세포 악성도 등급</td></tr>
+  <tr><td><b>Laterality</b></td><td>장기 좌우 구분</td></tr>
+  <tr><td><b>EOD Schema ID Recode (2010+)</b></td><td>암 진행 단계 분류 코드</td></tr>
+  <tr><td><b>Combined Summary Stage with Expanded Regional Codes (2004+)</b></td><td>암 진행 단계</td></tr>
   <tr><td><b>RX Summ--Surg Prim Site (1998+)</b></td><td>수술 코드</td></tr>
   <tr><td><b>RX Summ--Scope Reg LN Sur (2003+)</b></td><td>림프절 절제 범위</td></tr>
   <tr><td><b>RX Summ--Surg Oth Reg/Dis (2003+)</b></td><td>기타 수술</td></tr>
