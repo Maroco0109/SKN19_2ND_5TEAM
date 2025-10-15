@@ -167,12 +167,12 @@ def visualize_single_prediction(
                 mode="lines",  # ✅ 마커 제거
                 name=event_names[k] if k < len(event_names) else f"Event {k}",
                 line=dict(color=colors[k % len(colors)], width=2),  # ✅ 원래 굵기 복원
-                hovertemplate="<b>%{fullData.name}</b><br>시간: %{x}개월<br>확률: %{y:.4f}<extra></extra>",
+                hovertemplate="<b>%{fullData.name}</b><br>시간: %{x}단위 기간<br>확률: %{y:.4f}<extra></extra>",
             )
         )
     fig_pmf.update_layout(
         title=dict(text="📈 PMF (Probability Mass Function) - 사건별 발생 확률", x=0.5),
-        xaxis_title="시간 (3개월 단위)",
+        xaxis_title="기간 (3개월 단위)",
         yaxis_title="발생 확률",
         yaxis=dict(range=[0, 0.2]),
         plot_bgcolor="white",

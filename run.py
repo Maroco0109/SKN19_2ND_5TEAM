@@ -304,7 +304,15 @@ with tab1:
             selected_values["Primary Site - labeled"], selected_values["Primary Site"] = sel, mapping[sel]
         for col in df.columns:
             if col in ["Primary Site", "Primary Site - labeled"]: continue
-            vals = sorted(df[col].dropna().unique().tolist())
+            vals = df[col].dropna().unique().tolist()
+
+            # 숫자형 컬럼이면 int로 변환 (예: float → int, str → 그대로)
+            if pd.api.types.is_numeric_dtype(df[col]):
+                # 값 중 float이 섞여 있을 수 있으므로 안전하게 캐스팅
+                vals = sorted(list({int(v) if float(v).is_integer() else float(v) for v in vals}))
+            else:
+                vals = sorted(map(str, vals)) 
+                
             if vals:
                 emoji = {"Age":"👤","Sex":"⚥","Race":"🌍","Stage":"📊","Grade":"📈",
                          "Tumor Size":"📏","Surgery":"🔪","Radiation":"☢️","Chemotherapy":"💊"}.get(col,"📝")
