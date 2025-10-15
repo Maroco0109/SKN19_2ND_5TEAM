@@ -212,9 +212,9 @@ TEAMPROJECT/
   <tr><td><b>RX Summ--Surg Prim Site (1998+)</b></td><td>수술 코드</td></tr>
   <tr><td><b>RX Summ--Scope Reg LN Sur (2003+)</b></td><td>림프절 절제 범위</td></tr>
   <tr><td><b>RX Summ--Surg Oth Reg/Dis (2003+)</b></td><td>기타 수술</td></tr>
-  <tr><td><b>Sequence number</b></td><td>순서 번호</td></tr>
+  <tr><td><b>Sequence number</b></td><td>암 확진 횟수</td></tr>
   <tr><td><b>Median household income inflation adj to 2023</b></td><td>가구 소득(2023 물가보정)</td></tr>
-  <tr><td><b>EOD Primary Tumor Recode (2018+)</b></td><td>EOD 원발 종양</td></tr>
+  <tr><td><b>EOD Primary Tumor Recode (2018+)</b></td><td>암의 전이 정도</td></tr>
   <tr><td><b>PRCDA 2020</b></td><td>PRCDA 2020</td></tr>
 </table>
 
