@@ -205,7 +205,7 @@ st.markdown("""
   background:#ffffff !important;
 }
 </style>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=True) # 수정
 
 st.markdown("""
 <style>
