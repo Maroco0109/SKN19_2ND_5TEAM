@@ -10,23 +10,23 @@
 <table>
   <tr>
     <td align="center" width="200px">
-      <img src="" width="120px" height="120px" alt="박준영" style="border-radius: 50%;"><br/>
+      <img src="./public/1.png" width="120px" height="120px" alt="박준영" style="border-radius: 50%;"><br/>
       <b>박준영</b>
     </td>
     <td align="center" width="200px">
-      <img src="" width="120px" height="120px" alt="강지완" style="border-radius: 50%;"><br/>
+      <img src="./public/3.png" width="120px" height="120px" alt="강지완" style="border-radius: 50%;"><br/>
       <b>강지완</b>
     </td>
     <td align="center" width="200px">
-      <img src="" width="120px" height="120px" alt="김민정" style="border-radius: 50%;"><br/>
+      <img src="./public/2.png" width="120px" height="120px" alt="김민정" style="border-radius: 50%;"><br/>
       <b>김민정</b>
     </td>
     <td align="center" width="200px">
-      <img src="" width="120px" height="120px" alt="이승원" style="border-radius: 50%;"><br/>
+      <img src="./public/4.png" width="120px" height="120px" alt="이승원" style="border-radius: 50%;"><br/>
       <b>이승원</b>
     </td>
    <td align="center" width="200px">
-      <img src="" width="120px" height="120px" alt="박소희" style="border-radius: 50%;"><br/>
+      <img src="./public/5.png" width="120px" height="120px" alt="박소희" style="border-radius: 50%;"><br/>
       <b>박소희</b>
     </td>
   </tr>
@@ -57,7 +57,7 @@
 ## 2. **프로젝트 개요**
 ---
 ### 2.1. 프로젝트 명
-#### **암 환자 고위험군 및 이탈율 예측**
+### **암 환자 고위험군 및 이탈율 예측**
 
 ### 2.2. 프로젝트 주제 선정 배경
 > 병원 관점에서 질병 환자의 **사망**은 단순한 의료적 사건이 아니라, **고객의 이탈(churn)** 과 유사한 개념으로 볼 수 있다.
@@ -70,7 +70,8 @@
 이는 단순한 질병 통계 분석을 넘어, 병원의 **서비스 지속성과 환자 관리 효율성**을 높이는 핵심 전략으로 기능한다.
 
 ### 2.3. 프로젝트 목적
-본 프로젝트의 목적은 다음과 같다.
+암 환자에 대한 관찰과 추적은 지속적으로 이루어져야한다. 특정 기간에 대한 생존율을 예측하기에는 장기 치료가 불가피한 경우도 많기에, 다양한 기간에서의 생존율을 예측할 필요가 있다.    
+따라서 해당 프로젝트에서는 각 시간대별, 사망 원인별 환자의 생존율을 추정하여 각 환자에 맞는 관리 전략을 제공하는데 도움을 주고자 한다.
 
 1. 암 환자의 시간에 따른 생존율 예측
 
@@ -78,23 +79,26 @@
 
 2. 주요 사망 원인별 사망률 예측 및 생존 기간 산출
 
-- 암 유형별·원인별로 사망 확률을 분석하여 환자의 예상 생존 기간을 예측한다.
+- 암 유형별·사망 원인별로 사망 확률을 분석하여 환자의 예상 생존 기간을 예측한다.
 
 3. 예측 기반 위험 점수(Risk Score) 산출
 
 - 예측된 생존율을 바탕으로 환자별 위험도를 0~100점 범위로 정량화하고,
 고위험군 환자를 직관적으로 식별할 수 있는 관리 지표를 제공한다.
 
+4. 생존 인원들의 치료 중단 시기 예측
+- 예측된 생존율을 바탕으로 생존이 예측되는 인원들 역시 치료 중단 시기를 예측한다.
+
 
 ---
 ## 3-1. **기술 스택**
 
 
-|      **카테고리**     |                                                                                                                                                                                                                    **기술 스택**                                                                                                                                                                                                                    |
-| :---------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|      **WEB**      |                                                                                                                                                 <img src="https://img.shields.io/badge/Streamlit-%23FE4B4B.svg?style=for-the-badge&logo=streamlit&logoColor=white" alt="Streamlit" width="120"/>                                                                                                                                                |
-|     **라이브러리**     |     <img src="https://img.shields.io/badge/pandas-%23150458.svg?style=for-the-badge&logo=pandas&logoColor=white" alt="Pandas" width="120"/> <img src="https://img.shields.io/badge/Matplotlib-%23ffffff.svg?style=for-the-badge&logo=Matplotlib&logoColor=black" alt="matplotlib" width="120" /> <img src="https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white" alt="Pytorch" width="120" />    |
-| **개발 환경 및 협업 도구** | <img src="https://img.shields.io/badge/GitBook-%23000000.svg?style=for-the-badge&logo=gitbook&logoColor=white" alt="Git" width="120"/> <img src="https://img.shields.io/badge/Visual%20Studio%20Code-0078d7.svg?style=for-the-badge&logo=visual-studio-code&logoColor=white" alt="VSCode" width="120"/> <img src="https://img.shields.io/badge/Notion-%23000000.svg?style=for-the-badge&logo=notion&logoColor=white" alt="Notion" width="120"/> |
+| **카테고리** | **기술스택** |
+| :--- | :--- |
+| **WEB** | <img src="https://img.shields.io/badge/Streamlit-%23FE4B4B.svg?style=for-the-badge&logo=streamlit&logoColor=white" alt="Streamlit" width="120"/> |
+| **라이브러리** | <img src="https://img.shields.io/badge/pandas-%23150458.svg?style=for-the-badge&logo=pandas&logoColor=white" alt="Pandas" width="120"/> <img src="https://img.shields.io/badge/Matplotlib-%23ffffff.svg?style=for-the-badge&logo=Matplotlib&logoColor=black" alt="matplotlib" width="120"/> <img src="https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white" alt="Pytorch" width="120"/> <img src="https://img.shields.io/badge/Plotly-%233F4F75.svg?style=for-the-badge&logo=plotly&logoColor=white" alt="Plotly" width="120"/> <img src="https://img.shields.io/badge/numpy-%23013243.svg?style=for-the-badge&logo=numpy&logoColor=white" alt="Numpy" width="120"/> |
+| **개발 환경 및 협업 도구** | <img src="https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white" alt="Git" width="120"/> <img src="https://img.shields.io/badge/Visual%20Studio%20Code-0078d7.svg?style=for-the-badge&logo=visual-studio-code&logoColor=white" alt="VSCode" width="120"/> <img src="https://img.shields.io/badge/Notion-%23000000.svg?style=for-the-badge&logo=notion&logoColor=white" alt="Notion" width="120"/> |
 
 
 ## 3-2. **파일 구조**
@@ -154,6 +158,10 @@ TEAMPROJECT/
 ---
 
 ## 5. **데이터 전처리 및 EDA**
+   
+모델의 학습과 평가에 사용한 데이터는 미국국립암연구소(NCI)에서 제공하는 암 환자에 대한 데이터셋인 SEER(Surveillance, Epidemiology, and End Results) 데이터셋의 일부를 사용하였다.   
+2022년에 내원한 기록이 있는 주요 4대 암(폐, 간, 위, 대장) 환자에 대한 데이터 약 500,000개를 기반으로 해당 과정을 진행하였다.
+   
 ### [데이터 전처리]
 ```modules/DataModify.py```
 ---------------------
@@ -188,6 +196,28 @@ TEAMPROJECT/
      <img src="./insight/img/plot_target_label_by_gender.png" width="100%" />
      <img src="./insight/img/figure.png" width="100%" />
 
+###  [  모델 입력 특성 ] 
+
+<table style='width:100%; border-collapse:collapse; font-size:0.95rem;'>
+  <tr><td><b>Sex</b></td><td>성별</td></tr>
+  <tr><td><b>Age recode with &lt;1 year olds and 90+</b></td><td>연령대</td></tr>
+  <tr><td><b>Year of diagnosis</b></td><td>진단 연도</td></tr>
+  <tr><td><b>Race recode (W, B, AI, API)</b></td><td>인종 재코드</td></tr>
+  <tr><td><b>Primary Site</b></td><td>암 발생 부위</td></tr>
+  <tr><td><b>Primary Site - labeled</b></td><td>암 발생 부위 라벨</td></tr>
+  <tr><td><b>Derived Summary Grade 2018 (2018+)</b></td><td>암세포 악성도 등급</td></tr>
+  <tr><td><b>Laterality</b></td><td>장기 좌우 구분</td></tr>
+  <tr><td><b>EOD Schema ID Recode (2010+)</b></td><td>암 진행 단계 분류 코드</td></tr>
+  <tr><td><b>Combined Summary Stage with Expanded Regional Codes (2004+)</b></td><td>암 진행 단계</td></tr>
+  <tr><td><b>RX Summ--Surg Prim Site (1998+)</b></td><td>수술 코드</td></tr>
+  <tr><td><b>RX Summ--Scope Reg LN Sur (2003+)</b></td><td>림프절 절제 범위</td></tr>
+  <tr><td><b>RX Summ--Surg Oth Reg/Dis (2003+)</b></td><td>기타 수술</td></tr>
+  <tr><td><b>Sequence number</b></td><td>순서 번호</td></tr>
+  <tr><td><b>Median household income inflation adj to 2023</b></td><td>가구 소득(2023 물가보정)</td></tr>
+  <tr><td><b>EOD Primary Tumor Recode (2018+)</b></td><td>EOD 원발 종양</td></tr>
+  <tr><td><b>PRCDA 2020</b></td><td>PRCDA 2020</td></tr>
+</table>
+
 ## 6. **인공지능 학습 결과서**
 ---
 
@@ -197,11 +227,11 @@ TEAMPROJECT/
  기본 모델의 형태와 손실함수는 *DeepHit: A Deep Learning Approach to Survival Analysis with Competing Risks.* (Lee, Changhee, et al., 2018)를 기반으로 작성하였다.  
 
  <div align="center">
-    <img src="./data/images/Deephit_original.png" alt="Deephit original" style="max-width: 100%; height: auto; margin-bottom: 20px;"/>
+    <img src="./data/images/original model.png" alt="Deephit original" style="max-width: 100%; height: auto; margin-bottom: 20px;"/>  
+    <br>
+    <i> Deephit 모델의 기본 구조 </i>
 </div>
- 
-  <br>
-  <i> Deephit 모델의 기본 구조 </i>
+
 
   DeepHit모델은 특성을 공유 Branch와 각 사건별 Branch에 차례대로 통과시켜 이산화시킨 시간 별 사건 발생 확률을 예측하는 형태의 모델이다.
 
@@ -224,7 +254,7 @@ TEAMPROJECT/
 #### **모델 성능 평가 지표**
 - Concordance Index (C-index) : 임의의 사건 두 개를 뽑아서 어떤 사건이 더 먼저 발생했는지 비교했을때, 해당 비교에 대한 정확도
 - Integrated Brier Score (IBS) : 모델의 시간대별 오차 제곱의 평균 (MSE의 시간축에 대한 적분)
-
+- MAE of predicted time : 모델이 예측한 생존 기간과, 실제 생존 기간 사이의 평균 오차
 
 <table>
   <tr>
@@ -260,20 +290,42 @@ TEAMPROJECT/
 </table>
 
 
-
-
 ### 6-3. 최종 모델 형태
+
+<div align="center">
+  <img src="./data/images/model2.png" alt="Deephit SEBlock" style="max-width: 100%; height: auto; margin-bottom: 20px;"/>
+  <br>
+  <i> 최종 Deephit 모델 </i>
+</div>
+
+<br>
 
 <div align="center">
   <img src="./data/images/Deephit CNN.png" alt="Deephit SEBlock" style="max-width: 100%; height: auto; margin-bottom: 20px;"/>
   <br>
-  <i> 최종 Deephit 모델 </i>
+  <i> 최종 모델의 상세 구조 </i>
 </div>
 
 ### 6-4. 위험 점수 계산
 
 모델을 통해 얻은 시간대별 사건 발생 확률(pmf)에 대한 가중치합을 계산한 후 Sigmoid를 통하여 0~100점 사이의 점수로 변환    
 가까운 시일 내에 사망할 확률이 높을 수록 높은 위험점수를 나타냄
+
+### 6-5. 하이퍼파라미터 튜닝 및 학습 최적화
+기본 파라미터로 학습하였을 때, 가장 좋은 성능을 보인 모델에 대해서 하이퍼 파라미터 튜닝과 학습 최적화를 진행
+#### **학습 최적화 결과**
+Batch Normalization + 스케줄러를 이용한 학습 최적화 결과
+
+<table>
+  <tr>
+    <th>Concordance Index (C-index)</th>
+    <th>Integrated Brier Score (IBS)</th>
+    <th>MAE of predicted time</th>
+  </tr>
+  <tr>
+    <td>0.9144</td><td>0.1638</td><td>5.3622</td>
+  </tr>
+</table>
 
 
 ## 7. **수행 결과**

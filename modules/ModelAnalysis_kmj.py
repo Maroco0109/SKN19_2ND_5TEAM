@@ -11,10 +11,56 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
 
 import torch
 
 from modules.Models import compute_risk_score_sigmoid
+
+
+def show_risk_level_with_emoji(risk_score):
+    """
+    위험도 점수에 따라 이모티콘과 메시지 표시
+
+    Args:
+        risk_score: 0~1 사이의 위험도 점수
+    """
+    if risk_score < 0.3:
+        emoji = "😊"
+        level = "낮음"
+        color = "#28a745"
+        bg_color = "#d4edda"
+    elif risk_score < 0.6:
+        emoji = "😐"
+        level = "보통"
+        color = "#ffc107"
+        bg_color = "#fff3cd"
+    elif risk_score < 0.8:
+        emoji = "😰"
+        level = "높음"
+        color = "#fd7e14"
+        bg_color = "#ffe5d0"
+    else:
+        emoji = "😱"
+        level = "매우 높음"
+        color = "#dc3545"
+        bg_color = "#f8d7da"
+
+    # 전체 위험도 표시
+    st.markdown(
+        f"""
+        <div style="text-align: center; padding: 30px; margin: 20px 0;
+                    background-color: {bg_color}; 
+                    border-radius: 15px; border: 3px solid {color};">
+            <div style="font-size: 60px; margin-bottom: 10px;">{emoji}</div>
+            <h2 style="color: {color}; margin: 10px 0;">종합 위험도: {level}</h2>
+            <h3 style="color: {color};">위험도 점수: {risk_score:.1%}</h3>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def predict_event_probabilities(
@@ -81,11 +127,6 @@ def visualize_single_prediction(
     event_weights=None,
     time_lambda=0.05,
 ):
-    """
-    단일 입력 데이터(1행 DataFrame)에 대해 PMF와 CIF를 시각화
-    마지막 시간 bin(dummy)은 제거됨
-    """
-
     if dp is not None:
         processed_df = dp.run(input_df)
     else:
@@ -100,70 +141,126 @@ def visualize_single_prediction(
 
     model.eval()
     with torch.no_grad():
-        _, pmf, cif = model(x)  # (1, num_events, time_bins)
+        _, pmf, cif = model(x)
 
     pmf = pmf[:, :, :-1]
     cif = cif[:, :, :-1]
     _, num_events, time_bins = cif.shape
     time_points = list(range(time_bins))
 
-    fig_pmf, ax_pmf = plt.subplots(figsize=(8, 4))
-    for k in range(num_events):
-        ax_pmf.plot(time_points, pmf[0, k].cpu().numpy().flatten(), label=f"Event {k}")
-    ax_pmf.set_xlabel("Time bins")
-    ax_pmf.set_ylabel("Probability (PMF)")
-    ax_pmf.set_title("PMF (Probability Mass Function)")
-    ax_pmf.legend()
-    ax_pmf.grid(True)
-    ax_pmf.set_xlim(0, 90)
-    ax_pmf.set_ylim(0, 0.2)
-    st.pyplot(fig_pmf)
-
-    fig_cif, ax_cif = plt.subplots(figsize=(8, 4))
-    for k in range(num_events):
-        ax_cif.plot(time_points, cif[0, k].cpu().numpy().flatten(), label=f"Event {k}")
-    ax_cif.set_xlabel("Time bins")
-    ax_cif.set_ylabel("Cumulative Probability (CIF)")
-    ax_cif.set_title("CIF (Cumulative Incidence Function)")
-    ax_cif.legend()
-    ax_cif.grid(True)
-    ax_cif.set_xlim(0, 90)
-    ax_cif.set_ylim(0, 1)
-    st.pyplot(fig_cif)
-
-    cif_np = cif[0].cpu().numpy()  # (num_events, time_bins)
-    num_events, time_bins = cif_np.shape
-
-    survival_probs = []
-    pred_time = None
-
-    for t in range(time_bins):
-        surv = 1 - np.sum(cif_np[:, t])  # 🔹 joint survival from CIF
-        survival_probs.append(surv)
-
-        if surv <= 0.9 and pred_time is None:
-            pred_time = t
-
-    if pred_time is None:
-        pred_time = time_bins - 1
-
-    fig_surv, ax_surv = plt.subplots(figsize=(8, 4))
-    ax_surv.plot(time_points, survival_probs, color="black", linewidth=2)
-    ax_surv.set_xlabel("Time bins")
-    ax_surv.set_ylabel("Survival Probability S(t)")
-    ax_surv.set_title("Survival Curve (No Event Occurrence Probability)")
-    ax_surv.grid(True)
-    ax_surv.set_xlim(0, 90)
-    ax_surv.set_ylim(0, 1)
-    st.pyplot(fig_surv)
+    colors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FECA57"]
+    event_names = ["암 관련 사망", "합병증 관련 사망", "기타 질환 사망", "자살/자해"]
 
     risk_score = compute_risk_score_sigmoid(
         pmf, time_lambda=time_lambda, event_weights=event_weights
     )
-    st.subheader("⚠️ 위험 점수 (Risk Score)")
-    st.write(f"{risk_score.item():.2f} / 100")
+    normalized_risk = risk_score.item() / 100.0
+    show_risk_level_with_emoji(normalized_risk)
+
+    # ===== PMF (마커 제거, 선 원래 굵기) =====
+    fig_pmf = go.Figure()
+    for k in range(num_events):
+        fig_pmf.add_trace(
+            go.Scatter(
+                x=time_points,
+                y=pmf[0, k].cpu().numpy().flatten(),
+                mode="lines",  # ✅ 마커 제거
+                name=event_names[k] if k < len(event_names) else f"Event {k}",
+                line=dict(color=colors[k % len(colors)], width=2),  # ✅ 원래 굵기 복원
+                hovertemplate="<b>%{fullData.name}</b><br>시간: %{x}개월<br>확률: %{y:.4f}<extra></extra>",
+            )
+        )
+    fig_pmf.update_layout(
+        title=dict(text="📈 PMF (Probability Mass Function) - 사건별 발생 확률", x=0.5),
+        xaxis_title="시간 (3개월 단위)",
+        yaxis_title="발생 확률",
+        yaxis=dict(range=[0, 0.2]),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+    )
+    st.plotly_chart(fig_pmf, use_container_width=True)
+
+    # ===== CIF (마커 제거, 선 원래 굵기) =====
+    fig_cif = go.Figure()
+    for k in range(num_events):
+        fig_cif.add_trace(
+            go.Scatter(
+                x=time_points,
+                y=cif[0, k].cpu().numpy().flatten(),
+                mode="lines",  # ✅ 마커 제거
+                name=event_names[k] if k < len(event_names) else f"Event {k}",
+                line=dict(color=colors[k % len(colors)], width=2),
+                fill="tonexty" if k > 0 else "tozeroy",
+                fillcolor=f"rgba{tuple(list(px.colors.hex_to_rgb(colors[k % len(colors)])) + [0.1])}",
+                hovertemplate="<b>%{fullData.name}</b><br>시간: %{x}개월<br>누적 확률: %{y:.4f}<extra></extra>",
+            )
+        )
+    fig_cif.update_layout(
+        title=dict(text="📈 CIF (Cumulative Incidence Function) - 누적 발생 확률", x=0.5),
+        xaxis_title="시간 (3개월 단위)",
+        yaxis_title="누적 발생 확률",
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+    )
+    st.plotly_chart(fig_cif, use_container_width=True)
+
+    # ===== 생존 곡선 (마커 제거, 선 원래 굵기, 기준선 원래 두께) =====
+    cif_np = cif[0].cpu().numpy()
+    num_events, time_bins = cif_np.shape
+    survival_probs = []
+    pred_time = None
+    for t in range(time_bins):
+        surv = 1 - np.sum(cif_np[:, t])
+        survival_probs.append(surv)
+        if surv <= 0.9 and pred_time is None:
+            pred_time = t
+    if pred_time is None:
+        pred_time = time_bins - 1
+
+    fig_surv = go.Figure()
+    fig_surv.add_trace(
+        go.Scatter(
+            x=time_points,
+            y=survival_probs,
+            mode="lines",  # ✅ 마커 제거
+            name="생존 확률",
+            line=dict(color="#2c3e50", width=2),  # ✅ 원래 굵기 복원
+            fill="tozeroy",
+            fillcolor="rgba(44,62,80,0.1)",
+            hovertemplate="<b>생존 확률</b><br>시간: %{x}개월<br>확률: %{y:.4f}<extra></extra>",
+        )
+    )
+
+    if pred_time is not None and pred_time < time_bins - 1:
+        fig_surv.add_vline(
+            x=pred_time,
+            line_dash="dash",
+            line_color="red",
+            line_width=2,  # ✅ 기준선 원래 두께
+            annotation_text=f"90% 생존 시점: {pred_time}개월",
+            annotation_position="top",
+        )
+        fig_surv.add_hline(
+            y=0.9,
+            line_dash="dash",
+            line_color="red",
+            line_width=2,  # ✅ 기준선 원래 두께
+            annotation_text="90% 생존 확률",
+            annotation_position="left",
+        )
+
+    fig_surv.update_layout(
+        title=dict(text="📈 생존 곡선 (Survival Curve) - 사건 미발생 확률", x=0.5),
+        xaxis_title="시간 (3개월 단위)",
+        yaxis_title="생존 확률 S(t)",
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        showlegend=False,
+    )
+    st.plotly_chart(fig_surv, use_container_width=True)
 
     return pred_time
+
 
 
 def dataset_to_dataframe(ds):
