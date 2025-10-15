@@ -574,6 +574,9 @@ Batch Normalization + 스케줄러를 이용한 학습 최적화 결과
 ## 7. **수행 결과**
 ---
 
+<img src="./data/images/암-환자-위험도-예측-시스템 (환자 정보).png" width="100%" />
+<img src="./data/images/암-환자-위험도-예측-시스템 (예측).png" width="100%" />
+
 ---
 
 ## 8. **트러블 슈팅**
