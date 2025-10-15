@@ -176,16 +176,15 @@ TEAMPROJECT/
     <tr>
       <td align="left">1</td>
       <td align="left">프로젝트 컨셉트 및 방향성</td>
-      <td align="left">강지완, 김민정, 박소희, 박준영, 이승원</td>
+      <td align="left">ALL</td>
       <td align="left">2025년 9월 30일</td>
       <td align="left">2025년 10월 5일</td>
-      <td align="left">2022Data_part1.csv,
-2022Data_part2.csv</td>
+      <td align="left">2022Data_part1.csv<br>2022Data_part2.csv</td>
     </tr>
     <tr>
       <td align="left">1.1.</td>
       <td align="left">프로젝트 주제 선정</td>
-      <td align="left">강지완, 김민정, 박소희, 박준영, 이승원</td>
+      <td align="left">ALL</td>
       <td align="left">2025년 9월 30일</td>
       <td align="left">2025년 10월 2일</td>
       <td align="left"></td>
@@ -193,7 +192,7 @@ TEAMPROJECT/
     <tr>
       <td align="left">1.2</td>
       <td align="left">데이터셋 분석</td>
-      <td align="left">강지완, 김민정, 박소희, 박준영, 이승원</td>
+      <td align="left">ALL</td>
       <td align="left">2025년 10월 1일</td>
       <td align="left">2025년 10월 5일</td>
       <td align="left"></td>
@@ -201,7 +200,7 @@ TEAMPROJECT/
     <tr>
       <td align="left">1.2.1</td>
       <td align="left">타겟 레이블 분석</td>
-      <td align="left">강지완, 김민정, 박소희, 박준영, 이승원</td>
+      <td align="left">ALL</td>
       <td align="left">2025년 10월 1일</td>
       <td align="left">2025년 10월 2일</td>
       <td align="left"></td>
@@ -209,7 +208,7 @@ TEAMPROJECT/
     <tr>
       <td align="left">1.2.2</td>
       <td align="left">컬럼명 분석</td>
-      <td align="left">강지완, 김민정, 박소희, 박준영, 이승원</td>
+      <td align="left">ALL</td>
       <td align="left">2025년 10월 1일</td>
       <td align="left">2025년 10월 5일</td>
       <td align="left"></td>
@@ -217,7 +216,7 @@ TEAMPROJECT/
     <tr>
       <td align="left">1.2.3</td>
       <td align="left">피처값 분석 (컬럼 내용)</td>
-      <td align="left">강지완, 김민정, 박소희, 박준영, 이승원</td>
+      <td align="left">ALL</td>
       <td align="left">2025년 10월 1일</td>
       <td align="left">2025년 10월 5일</td>
       <td align="left"></td>
@@ -297,7 +296,7 @@ TEAMPROJECT/
     <tr>
       <td align="left">4</td>
       <td align="left">README 정리</td>
-      <td align="left">강지완, 김민정, 이승원, 박소희, 박준영</td>
+      <td align="left">ALL</td>
       <td align="left">2025년 10월 11일</td>
       <td align="left">2025년 10월 15일</td>
       <td align="left">README.md</td>
