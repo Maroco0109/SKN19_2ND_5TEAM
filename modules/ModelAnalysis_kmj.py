@@ -192,12 +192,12 @@ def visualize_single_prediction(
                 line=dict(color=colors[k % len(colors)], width=2),
                 fill="tonexty" if k > 0 else "tozeroy",
                 fillcolor=f"rgba{tuple(list(px.colors.hex_to_rgb(colors[k % len(colors)])) + [0.1])}",
-                hovertemplate="<b>%{fullData.name}</b><br>시간: %{x}개월<br>누적 확률: %{y:.4f}<extra></extra>",
+                hovertemplate="<b>%{fullData.name}</b><br>시간: %{x}단위 기간 <br>누적 확률: %{y:.4f}<extra></extra>",
             )
         )
     fig_cif.update_layout(
         title=dict(text="📈 CIF (Cumulative Incidence Function) - 누적 발생 확률", x=0.5),
-        xaxis_title="시간 (3개월 단위)",
+        xaxis_title="기간 (3개월 단위)",
         yaxis_title="누적 발생 확률",
         plot_bgcolor="white",
         paper_bgcolor="white",
@@ -227,7 +227,7 @@ def visualize_single_prediction(
             line=dict(color="#2c3e50", width=2),  # ✅ 원래 굵기 복원
             fill="tozeroy",
             fillcolor="rgba(44,62,80,0.1)",
-            hovertemplate="<b>생존 확률</b><br>시간: %{x}개월<br>확률: %{y:.4f}<extra></extra>",
+            hovertemplate="<b>생존 확률</b><br>시간: %{x}단위 기간 <br>확률: %{y:.4f}<extra></extra>",
         )
     )
 
@@ -237,7 +237,7 @@ def visualize_single_prediction(
             line_dash="dash",
             line_color="red",
             line_width=2,  # ✅ 기준선 원래 두께
-            annotation_text=f"90% 생존 시점: {pred_time}개월",
+            annotation_text=f"90% 생존 시점: {pred_time}단위 기간",
             annotation_position="top",
         )
         fig_surv.add_hline(
@@ -251,7 +251,7 @@ def visualize_single_prediction(
 
     fig_surv.update_layout(
         title=dict(text="📈 생존 곡선 (Survival Curve) - 사건 미발생 확률", x=0.5),
-        xaxis_title="시간 (3개월 단위)",
+        xaxis_title="기간 (3개월 단위)",
         yaxis_title="생존 확률 S(t)",
         plot_bgcolor="white",
         paper_bgcolor="white",
