@@ -33,16 +33,16 @@ def comparison_chart(pred_time, time_val):
                              text=[f"<b>{int(pred_point)}</b>▶"],
                              textposition="middle left",
                              name="예측 생존 기간",
-                             textfont=dict(size=22, color="#7fbdff"),
+                             textfont=dict(size=21, color="#7fbdff"),
                              hoverinfo="none"))
     fig.add_trace(go.Scatter(x=[0], y=[real_point], mode="text",
                              text=[f"◀<b>{int(real_point)}</b>"],
                              textposition="middle right",
                              name="실제 생존 기간",
-                             textfont=dict(size=22, color="#ff7e7e"),
+                             textfont=dict(size=21, color="#ff7e7e"),
                              hoverinfo="none"))
     fig.update_layout(
-        title=dict(text="<b>실제 생존 기간 vs 예측 생존 기간</b>", x=0.5, font=dict(size=20)),
+        title=dict(text="<b>실제 생존 기간vs예측 생존 기간</b>", x=0.5, font=dict(size=16)),
         xaxis=dict(visible=False),
         yaxis=dict(title="생존 기간(단위 : 3개월)",
                    range=[-3, max(pred_point, real_point) + 15],

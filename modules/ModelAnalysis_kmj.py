@@ -127,11 +127,6 @@ def visualize_single_prediction(
     event_weights=None,
     time_lambda=0.05,
 ):
-    """
-    단일 입력 데이터(1행 DataFrame)에 대해 PMF와 CIF를 시각화
-    마지막 시간 bin(dummy)은 제거됨
-    """
-
     if dp is not None:
         processed_df = dp.run(input_df)
     else:
@@ -146,156 +141,102 @@ def visualize_single_prediction(
 
     model.eval()
     with torch.no_grad():
-        _, pmf, cif = model(x)  # (1, num_events, time_bins)
+        _, pmf, cif = model(x)
 
     pmf = pmf[:, :, :-1]
     cif = cif[:, :, :-1]
     _, num_events, time_bins = cif.shape
     time_points = list(range(time_bins))
 
-    # 🎨 색상 팔레트 정의
     colors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FECA57"]
     event_names = ["암 관련 사망", "합병증 관련 사망", "기타 질환 사망", "자살/자해"]
 
-    # ⚠️ 종합 위험도 먼저 표시
     risk_score = compute_risk_score_sigmoid(
         pmf, time_lambda=time_lambda, event_weights=event_weights
     )
-    # 위험도 점수를 0-1 범위로 정규화 (100점 만점을 1.0으로 변환)
     normalized_risk = risk_score.item() / 100.0
-    # run_kmj.py의 이모티콘 표시 함수 적용
     show_risk_level_with_emoji(normalized_risk)
 
-    # 📊 PMF 인터랙티브 차트
+    # ===== PMF (마커 제거, 선 원래 굵기) =====
     fig_pmf = go.Figure()
     for k in range(num_events):
         fig_pmf.add_trace(
             go.Scatter(
                 x=time_points,
                 y=pmf[0, k].cpu().numpy().flatten(),
-                mode="lines+markers",
+                mode="lines",  # ✅ 마커 제거
                 name=event_names[k] if k < len(event_names) else f"Event {k}",
-                line=dict(color=colors[k % len(colors)], width=3),
-                marker=dict(size=6),
+                line=dict(color=colors[k % len(colors)], width=2),  # ✅ 원래 굵기 복원
                 hovertemplate="<b>%{fullData.name}</b><br>시간: %{x}개월<br>확률: %{y:.4f}<extra></extra>",
             )
         )
-
     fig_pmf.update_layout(
-        title={
-            "text": "📈 PMF (Probability Mass Function) - 사건별 발생 확률",
-            "x": 0.5,
-            "font": {"size": 18, "color": "#000000"},  # 검정색
-        },
+        title=dict(text="📈 PMF (Probability Mass Function) - 사건별 발생 확률", x=0.5),
         xaxis_title="시간 (3개월 단위)",
         yaxis_title="발생 확률",
-        xaxis=dict(
-            range=[0, 90],
-            gridcolor="lightgray",
-            title=dict(font=dict(color="#000000")),  # 축 제목 검정색
-            tickfont=dict(color="#000000"),  # 눈금 검정색
-        ),
-        yaxis=dict(
-            range=[0, 0.2],
-            gridcolor="lightgray",
-            title=dict(font=dict(color="#000000")),  # 축 제목 검정색
-            tickfont=dict(color="#000000"),  # 눈금 검정색
-        ),
+        yaxis=dict(range=[0, 0.2]),
         plot_bgcolor="white",
         paper_bgcolor="white",
-        font=dict(family="Arial", size=12, color="#000000"),  # 검정색
-        hovermode="x unified",
-        legend=dict(font=dict(color="#000000")),  # 범례 검정색
-        margin=dict(t=80, l=60, r=40, b=60),  # 타이틀 여백 확보
     )
     st.plotly_chart(fig_pmf, use_container_width=True)
 
-    # 📊 CIF 인터랙티브 차트
+    # ===== CIF (마커 제거, 선 원래 굵기) =====
     fig_cif = go.Figure()
     for k in range(num_events):
         fig_cif.add_trace(
             go.Scatter(
                 x=time_points,
                 y=cif[0, k].cpu().numpy().flatten(),
-                mode="lines+markers",
+                mode="lines",  # ✅ 마커 제거
                 name=event_names[k] if k < len(event_names) else f"Event {k}",
-                line=dict(color=colors[k % len(colors)], width=3),
-                marker=dict(size=6),
+                line=dict(color=colors[k % len(colors)], width=2),
                 fill="tonexty" if k > 0 else "tozeroy",
                 fillcolor=f"rgba{tuple(list(px.colors.hex_to_rgb(colors[k % len(colors)])) + [0.1])}",
                 hovertemplate="<b>%{fullData.name}</b><br>시간: %{x}개월<br>누적 확률: %{y:.4f}<extra></extra>",
             )
         )
-
     fig_cif.update_layout(
-        title={
-            "text": "📈 CIF (Cumulative Incidence Function) - 누적 발생 확률",
-            "x": 0.5,
-            "font": {"size": 18, "color": "#000000"},  # 검정색
-        },
+        title=dict(text="📈 CIF (Cumulative Incidence Function) - 누적 발생 확률", x=0.5),
         xaxis_title="시간 (3개월 단위)",
         yaxis_title="누적 발생 확률",
-        xaxis=dict(
-            range=[0, 90],
-            gridcolor="lightgray",
-            title=dict(font=dict(color="#000000")),  # 축 제목 검정색
-            tickfont=dict(color="#000000"),  # 눈금 검정색
-        ),
-        yaxis=dict(
-            range=[0, 1],
-            gridcolor="lightgray",
-            title=dict(font=dict(color="#000000")),  # 축 제목 검정색
-            tickfont=dict(color="#000000"),  # 눈금 검정색
-        ),
         plot_bgcolor="white",
         paper_bgcolor="white",
-        font=dict(family="Arial", size=12, color="#000000"),  # 검정색
-        hovermode="x unified",
-        legend=dict(font=dict(color="#000000")),  # 범례 검정색
-        margin=dict(t=80, l=60, r=40, b=60),  # 타이틀 여백 확보
     )
     st.plotly_chart(fig_cif, use_container_width=True)
 
-    cif_np = cif[0].cpu().numpy()  # (num_events, time_bins)
+    # ===== 생존 곡선 (마커 제거, 선 원래 굵기, 기준선 원래 두께) =====
+    cif_np = cif[0].cpu().numpy()
     num_events, time_bins = cif_np.shape
-
     survival_probs = []
     pred_time = None
-
     for t in range(time_bins):
-        surv = 1 - np.sum(cif_np[:, t])  # 🔹 joint survival from CIF
+        surv = 1 - np.sum(cif_np[:, t])
         survival_probs.append(surv)
-
         if surv <= 0.9 and pred_time is None:
             pred_time = t
-
     if pred_time is None:
         pred_time = time_bins - 1
 
-    # 📊 생존 곡선 인터랙티브 차트
     fig_surv = go.Figure()
-
-    # 생존 확률 라인
     fig_surv.add_trace(
         go.Scatter(
             x=time_points,
             y=survival_probs,
-            mode="lines+markers",
+            mode="lines",  # ✅ 마커 제거
             name="생존 확률",
-            line=dict(color="#2c3e50", width=4),
-            marker=dict(size=8, color="#2c3e50"),
+            line=dict(color="#2c3e50", width=2),  # ✅ 원래 굵기 복원
             fill="tozeroy",
-            fillcolor="rgba(44, 62, 80, 0.1)",
+            fillcolor="rgba(44,62,80,0.1)",
             hovertemplate="<b>생존 확률</b><br>시간: %{x}개월<br>확률: %{y:.4f}<extra></extra>",
         )
     )
 
-    # 90% 생존 확률 기준선
     if pred_time is not None and pred_time < time_bins - 1:
         fig_surv.add_vline(
             x=pred_time,
             line_dash="dash",
             line_color="red",
+            line_width=2,  # ✅ 기준선 원래 두께
             annotation_text=f"90% 생존 시점: {pred_time}개월",
             annotation_position="top",
         )
@@ -303,39 +244,23 @@ def visualize_single_prediction(
             y=0.9,
             line_dash="dash",
             line_color="red",
+            line_width=2,  # ✅ 기준선 원래 두께
             annotation_text="90% 생존 확률",
             annotation_position="left",
         )
 
     fig_surv.update_layout(
-        title={
-            "text": "📈 생존 곡선 (Survival Curve) - 사건 미발생 확률",
-            "x": 0.5,
-            "font": {"size": 18, "color": "#000000"},  # 검정색
-        },
+        title=dict(text="📈 생존 곡선 (Survival Curve) - 사건 미발생 확률", x=0.5),
         xaxis_title="시간 (3개월 단위)",
         yaxis_title="생존 확률 S(t)",
-        xaxis=dict(
-            range=[0, 90],
-            gridcolor="lightgray",
-            title=dict(font=dict(color="#000000")),  # 축 제목 검정색
-            tickfont=dict(color="#000000"),  # 눈금 검정색
-        ),
-        yaxis=dict(
-            range=[0, 1],
-            gridcolor="lightgray",
-            title=dict(font=dict(color="#000000")),  # 축 제목 검정색
-            tickfont=dict(color="#000000"),  # 눈금 검정색
-        ),
         plot_bgcolor="white",
         paper_bgcolor="white",
-        font=dict(family="Arial", size=12, color="#000000"),  # 검정색
         showlegend=False,
-        margin=dict(t=80, l=60, r=40, b=60),  # 타이틀 여백 확보
     )
     st.plotly_chart(fig_surv, use_container_width=True)
 
     return pred_time
+
 
 
 def dataset_to_dataframe(ds):
