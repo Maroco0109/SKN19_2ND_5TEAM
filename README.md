@@ -418,7 +418,7 @@ TEAMPROJECT/
   <tr><td><b>Sex</b></td><td>성별</td></tr>
   <tr><td><b>Age recode with &lt;1 year olds and 90+</b></td><td>연령대</td></tr>
   <tr><td><b>Year of diagnosis</b></td><td>진단 연도</td></tr>
-  <tr><td><b>Race recode (W, B, AI, API)</b></td><td>인종 재코드</td></tr>
+  <tr><td><b>Race recode (W, B, AI, API)</b></td><td>인종 코드</td></tr>
   <tr><td><b>Primary Site</b></td><td>암 발생 부위</td></tr>
   <tr><td><b>Primary Site - labeled</b></td><td>암 발생 부위 라벨</td></tr>
   <tr><td><b>Derived Summary Grade 2018 (2018+)</b></td><td>암세포 악성도 등급</td></tr>
@@ -504,6 +504,11 @@ TEAMPROJECT/
     <td>0.8263</td><td>0.2005</td><td>2.9128</td>
     <td>Hidden layer: (128, 64),<br> Time bins : 91,<br> SE ratio : 0.25,<br> CNN kernel size: (2,5), (2,3)</td>
   </tr>
+  <tr>
+    <th scope="row" style="text-align:left;">SEBlock + 2-dimensional CNN(with BN + Scheduler)</th>
+    <td>0.9144</td><td>0.1638</td><td>5.3622</td>
+    <td>Hidden layer: (128, 64),<br> Time bins : 91,<br> SE ratio : 0.25, Dropout : 0.25, alpha : 0.4, lr : 8e-5, weight decay : 1e-5<br> CNN kernel size: (2,5), (2,3)</td>
+  </tr>
 </table>
 
 
@@ -530,19 +535,7 @@ TEAMPROJECT/
 
 ### 6-5. 하이퍼파라미터 튜닝 및 학습 최적화
 기본 파라미터로 학습하였을 때, 가장 좋은 성능을 보인 모델에 대해서 하이퍼 파라미터 튜닝과 학습 최적화를 진행
-#### **학습 최적화 결과**
-Batch Normalization + 스케줄러를 이용한 학습 최적화 결과
 
-<table>
-  <tr>
-    <th>Concordance Index (C-index)</th>
-    <th>Integrated Brier Score (IBS)</th>
-    <th>MAE of predicted time</th>
-  </tr>
-  <tr>
-    <td>0.9144</td><td>0.1638</td><td>5.3622</td>
-  </tr>
-</table>
 
 
 ## 7. **수행 결과**
@@ -578,25 +571,23 @@ Batch Normalization + 스케줄러를 이용한 학습 최적화 결과
   </tr>
   <tr>
     <td>🧠 박준영</td>
-    <td></td>
+    <td>모델 설계 및 구현 과정을 따라가며 모델링 과정과 데이터 처리 등의 과정에서 어떤 과정을 선택해야 하는지에 관하여 많이 고민하였다. 모든 모듈 및 과정의 추가가 고성능을 보장하지 않는 다는 것과, 적절한 활용이 모델의 성능에 크게 영향을 미친다는 것과 데이터의 처리에 따라 모델의 설계와 성능이 달라졌기에 협업을 통하여 이러한 과제들을 해결해나가며 진행하였다.</td>
   </tr>
   <tr>
     <td>🌡️ 강지완</td>
-    <td></td>
+    <td>이번 프로젝트 과정을 통해 실 데이터 기반 EDA, 모델링에 대한 전반적인 프로세스를 경험할 수 있었다. 익숙하지 않은 모델을 활용하는 과정에서 각 레이어의 기능과 모델을 이해하는 방법, 그리고 적절한 하이퍼 파라미터 튜닝과정을 통한 성능 개선 모두 경험할 수 있었다. 또한, 의료 데이터셋을 활용하며 여러 시각화 방법과 적절한 타겟 레이블 선정 방식을 고민하며 데이터셋의 이해도를 높일 수 있었다. 어려운 데이터셋과 모델을 활용하는 프로젝트였지만, 팀원 모두가 이해하려고 노력하고 모두가 같이 진행하였기에 좋은 결과를 얻을 수 있었다.</td>
   </tr>
   <tr>
     <td>👩🏻‍⚕️ 김민정 </td>
-    <td>
-</td>
+    <td>이번 프로젝트에서는 암 환자 고위험군 선별 및 예측 시스템 개발을 위해 EDA와 DeepHit 모델의 구조를 중심으로 학습과 분석을 진행하였다. EDA를 통해 데이터의 분포, 변수 간 관계, 결측치를 분석하며 모델 입력의 품질을 개선할 수 있었다. 또한 DeepHit의 동작 플로우를 이해하며, 생존 분석에서 시간과 사건 확률을 동시에 다루는 딥러닝 접근법의 장점을 체감했다. 향후에는 다양한 생존 예측 모델 간 비교와 모델 해석력 향상을 통해 의료 현장에서 신뢰할 수 있는 예측 시스템으로 발전시키는 것을 목표로 하고자 한다.</td>
   </tr>
   <tr>
     <td>🧑🏻‍⚕️ 이승원</td>
-    <td>
-    </td>
+    <td>학습된 모델을 통해서 어떤 정보를 전달해 줄 수 있을지를 고민해볼 수 있는 시간이었다. 그리고 프로젝트의 이해도를 높이는 과정에서 소통의 중요성을 느낄 수 있었다.</td>
   </tr>
   <tr>
     <td>🫀 박소희</td>
-    <td></td>
+    <td>데이터 전처리부터 dl까지 전반적인 과정을 거치면서 학습했던 내용들을 프로젝트에 직접 적용해보면서 더 깊게 이해할 수 있는 계기가 되었다.  인코딩 시에 동일한 값이 서로 다른 값으로 매핑 되는 문제가 발생했다. 해당 문제를 해결하기 위해서 여러가지 해결 방안을 고민해 실 코드에 적용하면서 문제를 해결할 수 있었다.  코드 구성에 대한 전반적인 이해와 프로젝트에 대한 이해도를 높일 수 있는 시간이었다.</td>
   </tr>
 </table>
 
