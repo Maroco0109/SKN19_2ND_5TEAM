@@ -312,7 +312,7 @@ with tab1:
                 vals = sorted(list({int(v) if float(v).is_integer() else float(v) for v in vals}))
             else:
                 vals = sorted(map(str, vals)) 
-                
+
             if vals:
                 emoji = {"Age":"👤","Sex":"⚥","Race":"🌍","Stage":"📊","Grade":"📈",
                          "Tumor Size":"📏","Surgery":"🔪","Radiation":"☢️","Chemotherapy":"💊"}.get(col,"📝")
@@ -326,10 +326,8 @@ with tab1:
                 <tr><td><b>Sex</b></td><td>성별</td></tr>
                 <tr><td><b>Age recode with &lt;1 year olds and 90+</b></td><td>연령대</td></tr>
                 <tr><td><b>Year of diagnosis</b></td><td>진단 연도</td></tr>
-                <tr><td><b>Year of follow-up recode</b></td><td>추적 연도</td></tr>
                 <tr><td><b>Race recode (W, B, AI, API)</b></td><td>인종 재코드</td></tr>
                 <tr><td><b>Site recode ICD-O-3/WHO 2008</b></td><td>암 부위 재코드</td></tr>
-                <tr><td><b>Primary Site</b></td><td>원발 부위</td></tr>
                 <tr><td><b>Primary Site - labeled</b></td><td>원발 부위 라벨</td></tr>
                 <tr><td><b>Derived Summary Grade 2018 (2018+)</b></td><td>요약 등급 2018</td></tr>
                 <tr><td><b>Laterality</b></td><td>좌우 구분</td></tr>
@@ -340,14 +338,8 @@ with tab1:
                 <tr><td><b>RX Summ--Surg Oth Reg/Dis (2003+)</b></td><td>기타 수술</td></tr>
                 <tr><td><b>Sequence number</b></td><td>순서 번호</td></tr>
                 <tr><td><b>Median household income inflation adj to 2023</b></td><td>가구 소득(2023 물가보정)</td></tr>
-                <tr><td><b>Number of Cores Positive Recode (2010+)</b></td><td>양성 코어 수</td></tr>
-                <tr><td><b>Number of Cores Examined Recode (2010+)</b></td><td>검사 코어 수</td></tr>
                 <tr><td><b>EOD Primary Tumor Recode (2018+)</b></td><td>EOD 원발 종양</td></tr>
                 <tr><td><b>PRCDA 2020</b></td><td>PRCDA 2020</td></tr>
-                <tr><td><b>Survival months</b></td><td>생존 개월</td></tr>
-                <tr><td><b>Survival months_bin_3m</b></td><td>생존 개월(3개월 구간)</td></tr>
-                <tr><td><b>target_label</b></td><td>타깃 라벨</td></tr>
-                <tr><td><b>Vital status recode (study cutoff used)__enc</b></td><td>생존 상태(인코딩)</td></tr>
             </table>
             """)
 
