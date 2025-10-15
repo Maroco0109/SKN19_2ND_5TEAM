@@ -159,13 +159,11 @@ TEAMPROJECT/
     
 <html lang="ko"><head>
   <meta charset="UTF-8">
-  <title>WBS Table</title>
 </head>
 <body>
 <table>
   <thead>
     <tr>
-      <th align="right"></th>
       <th align="left">WBS Number</th>
       <th align="left">Task Title</th>
       <th align="left">담당자</th>
@@ -176,7 +174,6 @@ TEAMPROJECT/
   </thead>
   <tbody>
     <tr>
-      <td align="right"></td>
       <td align="left">1</td>
       <td align="left">프로젝트 컨셉트 및 방향성</td>
       <td align="left">강지완, 김민정, 박소희, 박준영, 이승원</td>
@@ -186,7 +183,6 @@ TEAMPROJECT/
 2022Data_part2.csv</td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">1.1.</td>
       <td align="left">프로젝트 주제 선정</td>
       <td align="left">강지완, 김민정, 박소희, 박준영, 이승원</td>
@@ -195,7 +191,6 @@ TEAMPROJECT/
       <td align="left"></td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">1.2</td>
       <td align="left">데이터셋 분석</td>
       <td align="left">강지완, 김민정, 박소희, 박준영, 이승원</td>
@@ -204,7 +199,6 @@ TEAMPROJECT/
       <td align="left"></td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">1.2.1</td>
       <td align="left">타겟 레이블 분석</td>
       <td align="left">강지완, 김민정, 박소희, 박준영, 이승원</td>
@@ -213,7 +207,6 @@ TEAMPROJECT/
       <td align="left"></td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">1.2.2</td>
       <td align="left">컬럼명 분석</td>
       <td align="left">강지완, 김민정, 박소희, 박준영, 이승원</td>
@@ -222,7 +215,6 @@ TEAMPROJECT/
       <td align="left"></td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">1.2.3</td>
       <td align="left">피처값 분석 (컬럼 내용)</td>
       <td align="left">강지완, 김민정, 박소희, 박준영, 이승원</td>
@@ -231,7 +223,6 @@ TEAMPROJECT/
       <td align="left"></td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">2</td>
       <td align="left">EDA</td>
       <td align="left">강지완, 김민정, 이승원</td>
@@ -240,7 +231,6 @@ TEAMPROJECT/
       <td align="left">encoded_dataset.csv<br>encoded_dataset_COD.csv</td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">2.1</td>
       <td align="left">데이터셋 인코딩</td>
       <td align="left">강지완, 박소희, 박준영</td>
@@ -249,7 +239,6 @@ TEAMPROJECT/
       <td align="left">Analysis.ipynb<br>DataModify.ipynb<br>DataSelect.py</td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">2.1</td>
       <td align="left">데이터 기본 정보 분석</td>
       <td align="left">강지완, 김민정, 이승원</td>
@@ -258,7 +247,6 @@ TEAMPROJECT/
       <td align="left">data_insight_kjw.ipynb<br>data_insight_kmj.ipynb<br>data_insight_lsw.ipynb</td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">2.2</td>
       <td align="left">사망 원인 기반 정보 분석</td>
       <td align="left">강지완, 김민정, 이승원</td>
@@ -267,7 +255,6 @@ TEAMPROJECT/
       <td align="left">data_insight_kjw.ipynb<br>data_insight_kmj.ipynb<br>data_insight_lsw.ipynb</td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">2.3</td>
       <td align="left">타겟 레이블 상관관계 분석</td>
       <td align="left">강지완, 김민정, 이승원</td>
@@ -276,7 +263,6 @@ TEAMPROJECT/
       <td align="left">EDA.ipynb<br>DataModify.ipynb<br>DataAnalysis.ipynb</td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">3</td>
       <td align="left">Modeling</td>
       <td align="left">박소희, 박준영</td>
@@ -285,7 +271,6 @@ TEAMPROJECT/
       <td align="left"></td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">3.1</td>
       <td align="left">기본 모델 구현</td>
       <td align="left">박준영</td>
@@ -294,7 +279,6 @@ TEAMPROJECT/
       <td align="left">Models.py<br>ModelAnalysis.py<br>train.ipynb<br>test.ipynb<br>accuraccy_test.ipynb<br>code_test.ipynb</td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">3.2</td>
       <td align="left">모듈 추가 및 각 모델 학습</td>
       <td align="left">박소희, 박준영</td>
@@ -303,7 +287,6 @@ TEAMPROJECT/
       <td align="left">deephit_model_2D_CNN.pth<br>deephit_model_feature_2dcnn.pth<br>risk_model_event_linears.pth</td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">3.3</td>
       <td align="left">모델 구조 시각화</td>
       <td align="left">박준영, 박소희</td>
@@ -312,7 +295,6 @@ TEAMPROJECT/
       <td align="left">Deephit CNN.png<br>Deephit_original.png<br>model2.png<br>original model.png</td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">4</td>
       <td align="left">README 정리</td>
       <td align="left">강지완, 김민정, 이승원, 박소희, 박준영</td>
@@ -321,7 +303,6 @@ TEAMPROJECT/
       <td align="left">README.md</td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">4.1</td>
       <td align="left">README 초안 작성</td>
       <td align="left">박소희</td>
@@ -330,7 +311,6 @@ TEAMPROJECT/
       <td align="left"></td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">4.2</td>
       <td align="left">EDA 및 시각화 정리</td>
       <td align="left">김민정</td>
@@ -339,7 +319,6 @@ TEAMPROJECT/
       <td align="left"></td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">4.3</td>
       <td align="left">데이터 전처리 방법 정리</td>
       <td align="left">강지완</td>
@@ -348,7 +327,6 @@ TEAMPROJECT/
       <td align="left"></td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">4.4</td>
       <td align="left">모델 학습 결과 정리</td>
       <td align="left">박준영, 박소희</td>
@@ -357,7 +335,6 @@ TEAMPROJECT/
       <td align="left"></td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">5</td>
       <td align="left">Streamlit 구현</td>
       <td align="left">김민정, 박소희, 박준영, 이승원</td>
@@ -366,7 +343,6 @@ TEAMPROJECT/
       <td align="left">run.py</td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">5.1</td>
       <td align="left">Streamlit 초안 작성</td>
       <td align="left">박준영</td>
@@ -375,7 +351,6 @@ TEAMPROJECT/
       <td align="left"></td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">5.2</td>
       <td align="left">전체 UI 구성 및 차트 디자인 변경</td>
       <td align="left">김민정, 박소희, 이승원</td>
@@ -384,7 +359,6 @@ TEAMPROJECT/
       <td align="left"></td>
     </tr>
     <tr>
-      <td align="right"></td>
       <td align="left">5.3</td>
       <td align="left">UI 병합 및 내용 보충</td>
       <td align="left">박준영, 박소희</td>
@@ -397,7 +371,7 @@ TEAMPROJECT/
 
 
 </body></html>
----
+
 
 ## 5. **데이터 전처리 및 EDA**
    
