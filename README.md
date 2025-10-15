@@ -227,7 +227,7 @@ TEAMPROJECT/
  기본 모델의 형태와 손실함수는 *DeepHit: A Deep Learning Approach to Survival Analysis with Competing Risks.* (Lee, Changhee, et al., 2018)를 기반으로 작성하였다.  
 
  <div align="center">
-    <img src="./data/images/Deephit_original.png" alt="Deephit original" style="max-width: 100%; height: auto; margin-bottom: 20px;"/>  
+    <img src="./data/images/original model.png" alt="Deephit original" style="max-width: 100%; height: auto; margin-bottom: 20px;"/>  
     <br>
     <i> Deephit 모델의 기본 구조 </i>
 </div>
