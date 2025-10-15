@@ -155,6 +155,248 @@ TEAMPROJECT/
 ```
 
 ## 4. **WBS**
+    
+    
+<html lang="ko"><head>
+  <meta charset="UTF-8">
+  <title>WBS Table</title>
+</head>
+<body>
+<table>
+  <thead>
+    <tr>
+      <th align="right"></th>
+      <th align="left">WBS Number</th>
+      <th align="left">Task Title</th>
+      <th align="left">담당자</th>
+      <th align="left">시작일</th>
+      <th align="left">종료일</th>
+      <th align="left">산출물</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="right"></td>
+      <td align="left">1</td>
+      <td align="left">프로젝트 컨셉트 및 방향성</td>
+      <td align="left">강지완, 김민정, 박소희, 박준영, 이승원</td>
+      <td align="left">2025년 9월 30일</td>
+      <td align="left">2025년 10월 5일</td>
+      <td align="left">2022Data_part1.csv,
+2022Data_part2.csv</td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">1.1.</td>
+      <td align="left">프로젝트 주제 선정</td>
+      <td align="left">강지완, 김민정, 박소희, 박준영, 이승원</td>
+      <td align="left">2025년 9월 30일</td>
+      <td align="left">2025년 10월 2일</td>
+      <td align="left"></td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">1.2</td>
+      <td align="left">데이터셋 분석</td>
+      <td align="left">강지완, 김민정, 박소희, 박준영, 이승원</td>
+      <td align="left">2025년 10월 1일</td>
+      <td align="left">2025년 10월 5일</td>
+      <td align="left"></td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">1.2.1</td>
+      <td align="left">타겟 레이블 분석</td>
+      <td align="left">강지완, 김민정, 박소희, 박준영, 이승원</td>
+      <td align="left">2025년 10월 1일</td>
+      <td align="left">2025년 10월 2일</td>
+      <td align="left"></td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">1.2.2</td>
+      <td align="left">컬럼명 분석</td>
+      <td align="left">강지완, 김민정, 박소희, 박준영, 이승원</td>
+      <td align="left">2025년 10월 1일</td>
+      <td align="left">2025년 10월 5일</td>
+      <td align="left"></td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">1.2.3</td>
+      <td align="left">피처값 분석 (컬럼 내용)</td>
+      <td align="left">강지완, 김민정, 박소희, 박준영, 이승원</td>
+      <td align="left">2025년 10월 1일</td>
+      <td align="left">2025년 10월 5일</td>
+      <td align="left"></td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">2</td>
+      <td align="left">EDA</td>
+      <td align="left">강지완, 김민정, 이승원</td>
+      <td align="left">2025년 10월 2일</td>
+      <td align="left">2025년 10월 10일</td>
+      <td align="left">encoded_dataset.csv<br>encoded_dataset_COD.csv</td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">2.1</td>
+      <td align="left">데이터셋 인코딩</td>
+      <td align="left">강지완, 박소희, 박준영</td>
+      <td align="left">2025년 10월 2일</td>
+      <td align="left">2025년 10월 3일</td>
+      <td align="left">Analysis.ipynb<br>DataModify.ipynb<br>DataSelect.py</td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">2.1</td>
+      <td align="left">데이터 기본 정보 분석</td>
+      <td align="left">강지완, 김민정, 이승원</td>
+      <td align="left">2025년 10월 10일</td>
+      <td align="left">2025년 10월 12일</td>
+      <td align="left">data_insight_kjw.ipynb<br>data_insight_kmj.ipynb<br>data_insight_lsw.ipynb</td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">2.2</td>
+      <td align="left">사망 원인 기반 정보 분석</td>
+      <td align="left">강지완, 김민정, 이승원</td>
+      <td align="left">2025년 10월 10일</td>
+      <td align="left">2025년 10월 14일</td>
+      <td align="left">data_insight_kjw.ipynb<br>data_insight_kmj.ipynb<br>data_insight_lsw.ipynb</td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">2.3</td>
+      <td align="left">타겟 레이블 상관관계 분석</td>
+      <td align="left">강지완, 김민정, 이승원</td>
+      <td align="left">2025년 10월 10일</td>
+      <td align="left">2025년 10월 14일</td>
+      <td align="left">EDA.ipynb<br>DataModify.ipynb<br>DataAnalysis.ipynb</td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">3</td>
+      <td align="left">Modeling</td>
+      <td align="left">박소희, 박준영</td>
+      <td align="left">2025년 10월 2일</td>
+      <td align="left">2025년 10월 15일</td>
+      <td align="left"></td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">3.1</td>
+      <td align="left">기본 모델 구현</td>
+      <td align="left">박준영</td>
+      <td align="left">2025년 10월 2일</td>
+      <td align="left">2025년 10월 15일</td>
+      <td align="left">Models.py<br>ModelAnalysis.py<br>train.ipynb<br>test.ipynb<br>accuraccy_test.ipynb<br>code_test.ipynb</td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">3.2</td>
+      <td align="left">모듈 추가 및 각 모델 학습</td>
+      <td align="left">박소희, 박준영</td>
+      <td align="left">2025년 10월 6일</td>
+      <td align="left">2025년 10월 12일</td>
+      <td align="left">deephit_model_2D_CNN.pth<br>deephit_model_feature_2dcnn.pth<br>risk_model_event_linears.pth</td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">3.3</td>
+      <td align="left">모델 구조 시각화</td>
+      <td align="left">박준영, 박소희</td>
+      <td align="left">2025년 10월 10일</td>
+      <td align="left">2025년 10월 12일</td>
+      <td align="left">Deephit CNN.png<br>Deephit_original.png<br>model2.png<br>original model.png</td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">4</td>
+      <td align="left">README 정리</td>
+      <td align="left">강지완, 김민정, 이승원, 박소희, 박준영</td>
+      <td align="left">2025년 10월 11일</td>
+      <td align="left">2025년 10월 15일</td>
+      <td align="left">README.md</td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">4.1</td>
+      <td align="left">README 초안 작성</td>
+      <td align="left">박소희</td>
+      <td align="left">2025년 10월 11일</td>
+      <td align="left">2025년 10월 13일</td>
+      <td align="left"></td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">4.2</td>
+      <td align="left">EDA 및 시각화 정리</td>
+      <td align="left">김민정</td>
+      <td align="left">2025년 10월 14일</td>
+      <td align="left">2025년 10월 14일</td>
+      <td align="left"></td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">4.3</td>
+      <td align="left">데이터 전처리 방법 정리</td>
+      <td align="left">강지완</td>
+      <td align="left">2025년 10월 14일</td>
+      <td align="left">2025년 10월 14일</td>
+      <td align="left"></td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">4.4</td>
+      <td align="left">모델 학습 결과 정리</td>
+      <td align="left">박준영, 박소희</td>
+      <td align="left">2025년 10월 12일</td>
+      <td align="left">2025년 10월 15일</td>
+      <td align="left"></td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">5</td>
+      <td align="left">Streamlit 구현</td>
+      <td align="left">김민정, 박소희, 박준영, 이승원</td>
+      <td align="left">2025년 10월 13일</td>
+      <td align="left">2025년 10월 15일</td>
+      <td align="left">run.py</td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">5.1</td>
+      <td align="left">Streamlit 초안 작성</td>
+      <td align="left">박준영</td>
+      <td align="left">2025년 10월 13일</td>
+      <td align="left">2025년 10월 13일</td>
+      <td align="left"></td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">5.2</td>
+      <td align="left">전체 UI 구성 및 차트 디자인 변경</td>
+      <td align="left">김민정, 박소희, 이승원</td>
+      <td align="left">2025년 10월 14일</td>
+      <td align="left">2025년 10월 15일</td>
+      <td align="left"></td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td align="left">5.3</td>
+      <td align="left">UI 병합 및 내용 보충</td>
+      <td align="left">박준영, 박소희</td>
+      <td align="left">2025년 10월 14일</td>
+      <td align="left">2025년 10월 15일</td>
+      <td align="left"></td>
+    </tr>
+  </tbody>
+</table>
+
+
+</body></html>
 ---
 
 ## 5. **데이터 전처리 및 EDA**
@@ -332,10 +574,19 @@ Batch Normalization + 스케줄러를 이용한 학습 최적화 결과
 ## 7. **수행 결과**
 ---
 
-### 결론
 ---
 
-## 8. **한줄 회고**
+## 8. **트러블 슈팅**
+
+여러 파일을 인코딩하는 과정에서, 서로 다른 파일을 불러오면 같은 값이 서로 다르게 라벨링됨
+-> 인코딩 전후 데이터를 매핑하여 딕셔너리 형태로 저장하고, 새로운 데이터를 불러올 때 딕셔너리 값을 통해 인코딩하고 새로운 값은 추가하여 업데이트 하는 방식으로 해결
+
+모델 출력 결과에 softmax를 적용하면, 모든 확률값의 합이 1이 되어 환자가 기간 내에 무조건 사망한다 라는 결과가 나옴
+-> 데이터의 마지막에 dummy 시간축을 추가하여, 관측기간 동안 환자가 사망하지 않을 확률도 고려
+
+---
+
+## 9. **한줄 회고**
 
 <table>
   <tr>
